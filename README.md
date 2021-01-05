@@ -27,6 +27,12 @@ OPTIONS:
     -w, --window_size <window_size>    Integer size of window for statistics to be computed over. [default: 1000]
 ```
 
+Or you can compile yourself. You will need to <a href="https://www.rust-lang.org/tools/install">download rust</a>, clone this repo, and then run:
+
+`cargo build --release`
+
+This will then make the compiled binary in the `target/release` directory.
+
 Run `./target/release/fasta_windows --help` to display this message in the terminal.
 
 For example, to iterate over a fasta file in windows of 100 base pairs, computing trinucleotide diversity:
@@ -38,14 +44,14 @@ For example, to iterate over a fasta file in windows of 100 base pairs, computin
 Output is a CSV file with headers:
 
 ```
-ID,window,GC_percent,kmer_diversity
+ID,window,GC_percent,GC_skew,kmer_diversity
 ...
 ...
 ```
 
 Operating on the concatenated genome of *Arabidopsis thaliana* including plastid & mitochondrial genomes, takes only 8 seconds. Source fastas <a href="https://www.ncbi.nlm.nih.gov/genome/?term=arabidopsis%20thaliana">here</a>.
 
-Printed to stout (using time prefix):
+Printed to stdout (using time prefix):
 
 ```
 NC_003070.9 processed.

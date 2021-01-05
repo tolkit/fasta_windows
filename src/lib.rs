@@ -3,3 +3,4 @@
 pub mod gc;
 pub mod windows;
 pub mod kmer;
+pub mod wgs;

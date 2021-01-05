@@ -11,8 +11,11 @@ use bio::io::fasta;
 use fasta_windows::gc::gc;
 use fasta_windows::windows::windows;
 use fasta_windows::kmer::kmer;
+use fasta_windows::wgs::wgs;
 
 // TODO: can I implement multiple threads?
+//     : compare kmer distribution per window to genome wide distribution
+//     : separate file for genome stats.
 
 fn main() {
     // command line options
@@ -57,20 +60,22 @@ fn main() {
     let file = File::create(&output_file).unwrap();
     let mut file = LineWriter::new(file);
     // and write the headers
-    writeln!(file, "ID,window,GC_percent,kmer_diversity").unwrap();
+    writeln!(file, "ID,window,GC_percent,GC_skew,kmer_diversity").unwrap();
         
     // read in the fasta from file
     let reader = fasta::Reader::from_file(input_fasta).expect("Path invalid.");
 
-    let mut nb_reads = 0;
-    let mut nb_bases = 0;
+    // the sequence lengths of each fasta record.
+    let mut read_lengths: Vec<usize> = Vec::new();
+
+    // when I get round to implementing comparing kmer dist to genome wide
+    // will need two passes of the genome
 
     // iterate over fasta records
     for result in reader.records() {
         let record = result.expect("Error during fasta record parsing");
 
-        nb_reads += 1;
-        nb_bases += record.seq().len();
+        read_lengths.push(record.seq().len());
 
         // https://stackoverflow.com/questions/19076719/how-do-i-convert-a-vector-of-bytes-u8-to-a-string
         // the process of turning u8 into str appears to have very little overhead
@@ -80,20 +85,19 @@ fn main() {
             Ok(v) => v,
             Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
         };
-
+        // initiate a counter for the windows
         let mut counter = window_size;
 
-        // here sliding windows
+        // begin sliding windows
         let windows = windows::char_windows(nucleotide_string, window_size, window_size);
-
         for win in windows {
             let win_gc = gc::gc_content(win);
             let no_kmers = kmer::kmer_diversity(win, kmer_size);
 
             // not sure what the overhead of this is compared to writing at the end
-            writeln!(file, "{},{},{},{}", record.id(), counter, win_gc, no_kmers).unwrap();
-            
-            // re-set the counter if 
+            writeln!(file, "{},{},{},{},{}", record.id(), counter, win_gc.gc_content, win_gc.gc_skew, no_kmers).unwrap();
+
+            // re-set the counter if counter > length of current sequence
             if counter < record.seq().len() {
                 counter += window_size
             } else {
@@ -101,12 +105,15 @@ fn main() {
             }
         }
 
-        let gc = gc::gc_content(nucleotide_string);
+        //let gc = gc::gc_content(nucleotide_string);
         println!("{} processed.", record.id());
-        println!("Total GC: {}", gc);
-
     }
 
-    println!("Number of contigs/chromosomes: {}", nb_reads);
-    println!("Number of bases processed: {}", nb_bases);
+    println!("--------------------------");
+    // for now, just print these stats at the end.
+    // eventually will write to file.
+    let genome_stats = wgs::collect_genome_stats(read_lengths);
+    println!("Number of contigs/chromosomes: {}", genome_stats.no_reads);
+    println!("Total length of genome: {}", genome_stats.genome_length);
+    println!("The N50 of this genome: {}", genome_stats.n50);
 }
