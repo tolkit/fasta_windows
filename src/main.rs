@@ -14,6 +14,7 @@ use fasta_windows::kmer::kmer;
 use fasta_windows::wgs::wgs;
 
 // TODO: can I implement multiple threads?
+//     : change character string slices to u8 slices for speeeeeeeeeeeed.
 //     : compare kmer distribution per window to genome wide distribution
 //     : separate file for genome stats.
 
@@ -41,6 +42,12 @@ fn main() {
                  .help("Size of kmer to determine the diversity of in windows.")
                  .takes_value(true)
                  .default_value("4"))
+        .arg(Arg::with_name("canonical_kmers")
+                 .short("c")
+                 .long("canonical_kmers")
+                 .help("Should the canonical kmers be calculated? Bool, input true or false.")
+                 .takes_value(true)
+                 .default_value("false"))
         .arg(Arg::with_name("output")
                  .short("o")
                  .long("output")
@@ -54,13 +61,14 @@ fn main() {
     let output = matches.value_of("output").unwrap();
     let window_size = value_t!(matches.value_of("window_size"), usize).unwrap_or_else(|e| e.exit());
     let kmer_size = value_t!(matches.value_of("kmer_size"), usize).unwrap_or_else(|e| e.exit());
+    let canonical_kmers = value_t!(matches.value_of("canonical_kmers"), bool).unwrap_or_else(|e| e.exit());
 
     // initiate the output CSV
     let output_file = format!("{}{}", output, ".csv");
     let file = File::create(&output_file).unwrap();
     let mut file = LineWriter::new(file);
     // and write the headers
-    writeln!(file, "ID,window,GC_percent,GC_skew,kmer_diversity").unwrap();
+    writeln!(file, "ID,window,GC_percent,GC_skew,{}mer_diversity_canonical_{}", kmer_size, canonical_kmers).unwrap();
         
     // read in the fasta from file
     let reader = fasta::Reader::from_file(input_fasta).expect("Path invalid.");
@@ -92,10 +100,10 @@ fn main() {
         let windows = windows::char_windows(nucleotide_string, window_size, window_size);
         for win in windows {
             let win_gc = gc::gc_content(win);
-            let no_kmers = kmer::kmer_diversity(win, kmer_size);
+            let no_kmers = kmer::kmer_diversity(win, kmer_size, canonical_kmers);
 
             // not sure what the overhead of this is compared to writing at the end
-            writeln!(file, "{},{},{},{},{}", record.id(), counter, win_gc.gc_content, win_gc.gc_skew, no_kmers).unwrap();
+            writeln!(file, "{},{},{},{},{}", record.id(), counter, win_gc.gc_content, win_gc.gc_skew, no_kmers.kmer_diversity).unwrap();
 
             // re-set the counter if counter > length of current sequence
             if counter < record.seq().len() {
