@@ -43,6 +43,7 @@ pub mod kmeru8 {
 
         KmerStats {
             kmer_hash: map,
+            // do something with the hashmap
             kmer_diversity: diversity,
         }
     }

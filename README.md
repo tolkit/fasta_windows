@@ -42,6 +42,8 @@ For example, to iterate over a fasta file in windows of 100 base pairs, computin
 
 ## Output & benchmarks
 
+### Output
+
 Output is a CSV file with headers:
 
 ```
@@ -57,13 +59,7 @@ NC_003070.9,8000,34.1,-0.06158358,217
 NC_003070.9,9000,34.4,-0.046511628,227
 ```
 
-### Tests 
-
-Operating on the concatenated genome of *Arabidopsis thaliana* including plastid & mitochondrial genomes... Source fastas <a href="https://www.ncbi.nlm.nih.gov/genome/?term=arabidopsis%20thaliana">here</a>.
-
-Command:
-
-`time ./target/release/fasta_windows --fasta Athaliana_1_5_m_c.fasta --output test`
+And also currently printed to stdout is the number of sequences in the fasta file (ideally chromosomes), length of the total genome, and the N50.
 
 ```
 NC_003070.9 processed.
@@ -77,7 +73,17 @@ NC_037304.1 processed.
 Number of contigs/chromosomes: 7
 Total length of genome: 119668634
 The N50 of this genome: 23459830
+```
 
+### Tests 
+
+Operating on the concatenated genome of *Arabidopsis thaliana* including plastid & mitochondrial genomes (~120Mb). Source fastas <a href="https://www.ncbi.nlm.nih.gov/genome/?term=arabidopsis%20thaliana">here</a>.
+
+Command:
+
+`time ./target/release/fasta_windows --fasta Athaliana_1_5_m_c.fasta --output test`
+
+```
 real	0m16.211s
 user	0m15.670s
 sys	0m0.480s
