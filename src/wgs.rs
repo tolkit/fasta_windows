@@ -24,7 +24,7 @@ pub mod wgs {
         // calculate N50
         read_lengths.sort();
         let n50 = n_50(read_lengths, genome_length);
-        // return the struct
+
         GenomeStats {
             no_reads: no_reads,
             genome_length: genome_length,

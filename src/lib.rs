@@ -1,6 +1,5 @@
 // all the modules I've defined
 
-pub mod gc;
-pub mod windows;
-pub mod kmer;
+pub mod gcu8;
+pub mod kmeru8;
 pub mod wgs;

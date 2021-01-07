@@ -7,7 +7,7 @@ Currently only GC content and kmer diversity in sliding windows are implemented.
 ## Usage
 
 ```
-Fasta windows 0.1.0
+Fasta windows 0.1.1
 Max Brown <mb39@sanger.ac.uk>
 Quickly compute statistics over a fasta file in windows.
 
@@ -19,14 +19,16 @@ FLAGS:
     -V, --version    Prints version information
 
 OPTIONS:
-    -c, --canonical_kmers <canonical_kmers>    Should the canonical kmers be calculated? Bool, input true or false. [default: false]
+    -c, --canonical_kmers <canonical_kmers>    Should the canonical kmers be calculated? Bool, input true or false.
+                                               [default: false]
     -f, --fasta <fasta>                        The input fasta file.
     -k, --kmer_size <kmer_size>                Size of kmer to determine the diversity of in windows. [default: 4]
     -o, --output <output>                      Output filename for the CSV (without extension).
-    -w, --window_size <window_size>            Integer size of window for statistics to be computed over. [default: 1000]
+    -w, --window_size <window_size>            Integer size of window for statistics to be computed over. [default:
+                                               1000]
 ```
 
-I think you have to complile yourself, the binaries I've made are quite big. You will need to <a href="https://www.rust-lang.org/tools/install">download rust</a>, clone this repo, and then run:
+You have to complile yourself. <a href="https://www.rust-lang.org/tools/install">Download rust</a>, clone this repo, and then run:
 
 `cargo build --release`
 
@@ -43,16 +45,16 @@ For example, to iterate over a fasta file in windows of 100 base pairs, computin
 Output is a CSV file with headers:
 
 ```
-ID,window,GC_percent,GC_skew,4mer_diversity_canonical_true
-MK070895.1,1000,36.199997,-0.049723756,132
-MK070895.1,2000,37.5,-0.056,135
-MK070895.1,3000,34.3,-0.0670554,129
-MK070895.1,4000,32.8,-0.030487806,129
-MK070895.1,5000,31.5,0.034920637,130
-MK070895.1,6000,34.4,-0.034883723,125
-MK070895.1,7000,27.7,-0.010830325,128
-MK070895.1,8000,31.600002,-0.07594936,132
-MK070895.1,9000,30.199999,-0.13245033,129
+ID,window,GC_percent,GC_skew,4mer_diversity_canonical_false
+NC_003070.9,1000,32.7,-0.10703364,209
+NC_003070.9,2000,31.7,-0.05362776,206
+NC_003070.9,3000,32.5,-0.1323077,216
+NC_003070.9,4000,33.399998,-0.011976048,231
+NC_003070.9,5000,39.5,0.07848101,236
+NC_003070.9,6000,36.199997,0.13812155,229
+NC_003070.9,7000,38,0.02631579,233
+NC_003070.9,8000,34.1,-0.06158358,217
+NC_003070.9,9000,34.4,-0.046511628,227
 ```
 
 ### Tests 
@@ -76,9 +78,7 @@ Number of contigs/chromosomes: 7
 Total length of genome: 119668634
 The N50 of this genome: 23459830
 
-real	0m19.239s
-user	0m18.516s
-sys	0m0.622s
+real	0m16.211s
+user	0m15.670s
+sys	0m0.480s
 ```
-
-Lost a little time in computing canonical kmers, looking to implement in u8...

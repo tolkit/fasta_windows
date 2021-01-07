@@ -250,7 +250,7 @@ dependencies = [
 
 [[package]]
 name = "fasta_windows"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bio",
  "clap",

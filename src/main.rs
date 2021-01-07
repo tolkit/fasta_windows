@@ -1,5 +1,4 @@
 // external imports
-use std::str;
 use std::fs::File;
 use std::io::LineWriter;
 use std::io::prelude::*;
@@ -8,20 +7,18 @@ use clap::{App, Arg, value_t};
 use bio::io::fasta;
 
 // internal imports
-use fasta_windows::gc::gc;
-use fasta_windows::windows::windows;
-use fasta_windows::kmer::kmer;
+use fasta_windows::gcu8::gcu8;
+use fasta_windows::kmeru8::kmeru8;
 use fasta_windows::wgs::wgs;
 
 // TODO: can I implement multiple threads?
-//     : change character string slices to u8 slices for speeeeeeeeeeeed.
 //     : compare kmer distribution per window to genome wide distribution
 //     : separate file for genome stats.
 
 fn main() {
     // command line options
     let matches = App::new("Fasta windows")
-        .version("0.1.0")
+        .version(clap::crate_version!())
         .author("Max Brown <mb39@sanger.ac.uk>")
         .about("Quickly compute statistics over a fasta file in windows.")
         .arg(Arg::with_name("fasta")
@@ -82,25 +79,16 @@ fn main() {
     // iterate over fasta records
     for result in reader.records() {
         let record = result.expect("Error during fasta record parsing");
-
+        // for the stats at the end.
         read_lengths.push(record.seq().len());
-
-        // https://stackoverflow.com/questions/19076719/how-do-i-convert-a-vector-of-bytes-u8-to-a-string
-        // the process of turning u8 into str appears to have very little overhead
-        // and is more human readable? TODO test this.
-
-        let nucleotide_string = match str::from_utf8(record.seq()) {
-            Ok(v) => v,
-            Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
-        };
         // initiate a counter for the windows
         let mut counter = window_size;
-
         // begin sliding windows
-        let windows = windows::char_windows(nucleotide_string, window_size, window_size);
+        let windows = record.seq().chunks(window_size);
+
         for win in windows {
-            let win_gc = gc::gc_content(win);
-            let no_kmers = kmer::kmer_diversity(win, kmer_size, canonical_kmers);
+            let win_gc = gcu8::gc_content(win);
+            let no_kmers = kmeru8::kmer_diversity(win, kmer_size, canonical_kmers);
 
             // not sure what the overhead of this is compared to writing at the end
             writeln!(file, "{},{},{},{},{}", record.id(), counter, win_gc.gc_content, win_gc.gc_skew, no_kmers.kmer_diversity).unwrap();
@@ -112,8 +100,6 @@ fn main() {
                 counter = 0
             }
         }
-
-        //let gc = gc::gc_content(nucleotide_string);
         println!("{} processed.", record.id());
     }
 
