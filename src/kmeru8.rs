@@ -69,4 +69,5 @@ fn switch_base(c: u8) -> u8 {
         _ => b'N', 
     }
 }
+
 }

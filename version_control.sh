@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
+# don't add the local genome file I'm working on!
 git add README.md
-git add test.csv
+git add fw_out/
 git add Cargo.toml
 git add Cargo.lock
 git add src/
