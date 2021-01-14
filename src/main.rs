@@ -9,7 +9,7 @@ extern crate clap; // forgot why I needed extern crate.
 use clap::{App, Arg, value_t};
 use bio::io::fasta;
 // internal imports
-use fasta_windows::gcu8::gcu8;
+use fasta_windows::seq_statsu8::seq_statsu8;
 use fasta_windows::kmeru8::kmeru8;
 use fasta_windows::wgs::wgs;
 use fasta_windows::utils::utils;
@@ -78,9 +78,9 @@ fn main() {
     let mut file = LineWriter::new(file);
     // and write the headers
     if kmer_distance {
-        writeln!(file, "ID,window,GC_percent,GC_skew,{}mer_diversity_canonical_{},kmer_distance", kmer_size, canonical_kmers).unwrap();
+        writeln!(file, "ID,window,GC_percent,GC_skew,Shannon_entropy,{}mer_diversity_canonical_{},kmer_distance", kmer_size, canonical_kmers).unwrap();
     } else {
-        writeln!(file, "ID,window,GC_percent,GC_skew,{}mer_diversity_canonical_{}", kmer_size, canonical_kmers).unwrap();
+        writeln!(file, "ID,window,GC_percent,GC_skew,Shannon_entropy,{}mer_diversity_canonical_{}", kmer_size, canonical_kmers).unwrap();
     }
         
     // read in the fasta from file
@@ -120,14 +120,14 @@ fn main() {
         let windows = record.seq().chunks(window_size);
 
         for win in windows {
-            let win_gc = gcu8::gc_content(win);
+            let seq_stats = seq_statsu8::seq_stats(win);
             let kmer_stats = kmeru8::kmer_diversity(win, kmer_size, canonical_kmers);
             let kmer_distance_value = utils::create_kmer_distance(kmer_stats.kmer_hash, kmer_hash);
             // ugly way of handling this but...
             if kmer_distance {
-                writeln!(file, "{},{},{},{},{},{}", record.id(), counter, win_gc.gc_content, win_gc.gc_skew, kmer_stats.kmer_diversity, kmer_distance_value).unwrap();    
+                writeln!(file, "{},{},{},{},{},{},{}", record.id(), counter, seq_stats.gc_content, seq_stats.gc_skew, seq_stats.shannon_entropy, kmer_stats.kmer_diversity, kmer_distance_value).unwrap();    
             } else {
-                writeln!(file, "{},{},{},{},{}", record.id(), counter, win_gc.gc_content, win_gc.gc_skew, kmer_stats.kmer_diversity).unwrap();
+                writeln!(file, "{},{},{},{},{},{}", record.id(), counter, seq_stats.gc_content, seq_stats.gc_skew, seq_stats.shannon_entropy, kmer_stats.kmer_diversity).unwrap();
             }
             // re-set the counter if counter > length of current sequence
             if counter < record.seq().len() {

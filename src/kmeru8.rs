@@ -25,7 +25,7 @@ pub mod kmeru8 {
                 if rev_kmer < kmer.to_vec() {
                     kmer = &rev_kmer;
                 }
-                // skip where kmer contains an N
+                // skip where kmer contains an N (or any other invalid character?)
                 if kmer.contains(&b'N'){ 
                     continue; 
                 } 

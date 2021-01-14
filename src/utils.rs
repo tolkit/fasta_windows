@@ -24,10 +24,6 @@ pub mod utils {
         a
     }
 
-    // get the values of the KmerStats.map as a vector...
-    // let values = KmerStats.map.values().cloned().collect::<Vec<i64>>();
-
-    // pass the vector to this function to get the frequencies
     // a.k.a the kmer frequency count.
     fn freq(entries: Vec<i32>) -> HashMap<i32, i32> {
         entries.iter().fold(HashMap::new(), |mut freqs, value| {
@@ -35,7 +31,6 @@ pub mod utils {
         freqs
     })
     }
-    // which will return a hashmap itself. get the values as a vector in the same way
 
     // then we want to compute the euclidean distance
     // where vec1 is the window derived 
