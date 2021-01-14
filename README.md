@@ -53,7 +53,7 @@ Or to use default kmer length and windows, and calculate kmer count distance fro
 
 ### Output
 
-Output is a CSV file with headers:
+Output are a CSV file with headers:
 
 ```
 ID,window,GC_percent,GC_skew,Shannon_entropy,4mer_diversity_canonical_false
@@ -68,7 +68,7 @@ NC_003070.9,8000,34.1,-0.06158358,1.9070730536871001,217
 NC_003070.9,9000,34.4,-0.046511628,1.9220237551539758,227
 ```
 
-And also currently printed to stdout is the number of sequences in the fasta file (ideally chromosomes), length of the total genome, and the N50.
+And also a file with chromosome lengths/GC per chromosome (anything else in there?). Printed to stdout is the number of sequences in the fasta file (ideally chromosomes), length of the total genome, and the N50.
 
 ```
 [+]	NC_003070.9 processed.
@@ -79,7 +79,7 @@ And also currently printed to stdout is the number of sequences in the fasta fil
 [+]	NC_003076.8 processed.
 [+]	NC_037304.1 processed.
 [+]	Global stats:
-Number of contigs/chromosomes: 7
+    Number of contigs/chromosomes: 7
     Total length of genome: 119668634
     The N50 of this genome: 23459830
 ```
@@ -95,5 +95,5 @@ Example command:
 ```
 real	0m17.823s
 user    0m17.068s
-sys 0m0.614s
+sys     0m0.614s
 ```

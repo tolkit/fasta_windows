@@ -15,7 +15,6 @@ use fasta_windows::wgs::wgs;
 use fasta_windows::utils::utils;
 
 // TODO: can I implement multiple threads?
-//     : separate file for genome stats.
 
 fn main() {
     // command line options
@@ -70,17 +69,29 @@ fn main() {
     let kmer_distance = value_t!(matches.value_of("kmer_distance"), bool).unwrap_or_else(|e| e.exit());
 
     // create directory for output
-    create_dir_all("./fw_out/");
+    if let Err(e) = create_dir_all("./fw_out/") {
+        println!("[-]\tCreate directory error: {}", e.to_string());   
+    }
 
-    // initiate the output CSV
-    let output_file = format!("./fw_out/{}{}", output, ".csv");
-    let file = File::create(&output_file).unwrap();
-    let mut file = LineWriter::new(file);
+    // initiate the output CSV for windows
+    let output_file_1 = format!("./fw_out/{}{}", output, "_windows.csv");
+    let window_file = File::create(&output_file_1).unwrap();
+    let mut window_file = LineWriter::new(window_file);
+
     // and write the headers
     if kmer_distance {
-        writeln!(file, "ID,window,GC_percent,GC_skew,Shannon_entropy,{}mer_diversity_canonical_{},kmer_distance", kmer_size, canonical_kmers).unwrap();
+        writeln!(window_file, "ID,window,GC_percent,GC_skew,Shannon_entropy,{}mer_diversity_canonical_{},kmer_distance", kmer_size, canonical_kmers).unwrap();
     } else {
-        writeln!(file, "ID,window,GC_percent,GC_skew,Shannon_entropy,{}mer_diversity_canonical_{}", kmer_size, canonical_kmers).unwrap();
+        writeln!(window_file, "ID,window,GC_percent,GC_skew,Shannon_entropy,{}mer_diversity_canonical_{}", kmer_size, canonical_kmers).unwrap();
+    }
+
+    // second output file
+    let output_file_2 = format!("./fw_out/{}{}", output, "_per_chromosome.csv");
+    let chromosome_file = File::create(&output_file_2).unwrap();
+    let mut chromosome_file = LineWriter::new(chromosome_file);
+    // write headers
+    if let Err(e) = writeln!(chromosome_file, "ID,Length,GC_percent") {
+        println!("[-]\tWriting error: {}", e.to_string());   
     }
         
     // read in the fasta from file
@@ -93,7 +104,7 @@ fn main() {
 
     if kmer_distance {
         // creating new fasta reader here shouldnt have large overhead.
-        let kmer_reader = fasta::Reader::from_file(input_fasta).expect("[-] Path invalid.");
+        let kmer_reader = fasta::Reader::from_file(input_fasta).expect("[-]\tPath invalid.");
         println!("[+]\tFirst pass of genome.");
         for result in kmer_reader.records() {
             let record = result.expect("Error during fasta record parsing");
@@ -125,9 +136,9 @@ fn main() {
             let kmer_distance_value = utils::create_kmer_distance(kmer_stats.kmer_hash, kmer_hash);
             // ugly way of handling this but...
             if kmer_distance {
-                writeln!(file, "{},{},{},{},{},{},{}", record.id(), counter, seq_stats.gc_content, seq_stats.gc_skew, seq_stats.shannon_entropy, kmer_stats.kmer_diversity, kmer_distance_value).unwrap();    
+                writeln!(window_file, "{},{},{},{},{},{},{}", record.id(), counter, seq_stats.gc_content, seq_stats.gc_skew, seq_stats.shannon_entropy, kmer_stats.kmer_diversity, kmer_distance_value).unwrap();    
             } else {
-                writeln!(file, "{},{},{},{},{},{}", record.id(), counter, seq_stats.gc_content, seq_stats.gc_skew, seq_stats.shannon_entropy, kmer_stats.kmer_diversity).unwrap();
+                writeln!(window_file, "{},{},{},{},{},{}", record.id(), counter, seq_stats.gc_content, seq_stats.gc_skew, seq_stats.shannon_entropy, kmer_stats.kmer_diversity).unwrap();
             }
             // re-set the counter if counter > length of current sequence
             if counter < record.seq().len() {
@@ -135,6 +146,10 @@ fn main() {
             } else {
                 counter = 0
             }
+        }
+        // write chromosome level stats to file
+        if let Err(e) = writeln!(chromosome_file, "{},{},{}", record.id(), record.seq().len(), seq_statsu8::seq_stats(record.seq()).gc_content) {
+            println!("[-]\tWriting error: {}", e.to_string());   
         }
         println!("[+]\t{} processed.", record.id());
     }
