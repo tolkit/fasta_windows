@@ -1,18 +1,18 @@
 // external imports
 // std
-use std::fs::{File, create_dir_all};
-use std::io::LineWriter;
-use std::io::prelude::*;
 use std::collections::HashMap;
+use std::fs::{create_dir_all, File};
+use std::io::prelude::*;
+use std::io::LineWriter;
 // non-std
 extern crate clap; // forgot why I needed extern crate.
-use clap::{App, Arg, value_t};
 use bio::io::fasta;
+use clap::{value_t, App, Arg};
 // internal imports
-use fasta_windows::seq_statsu8::seq_statsu8;
 use fasta_windows::kmeru8::kmeru8;
-use fasta_windows::wgs::wgs;
+use fasta_windows::seq_statsu8::seq_statsu8;
 use fasta_windows::utils::utils;
+use fasta_windows::wgs::wgs;
 
 // TODO: can I implement multiple threads?
 
@@ -59,18 +59,19 @@ fn main() {
                  .takes_value(true)
                  .required(true))
         .get_matches();
-    
     // parse command line options
     let input_fasta = matches.value_of("fasta").unwrap();
     let output = matches.value_of("output").unwrap();
     let window_size = value_t!(matches.value_of("window_size"), usize).unwrap_or_else(|e| e.exit());
     let kmer_size = value_t!(matches.value_of("kmer_size"), usize).unwrap_or_else(|e| e.exit());
-    let canonical_kmers = value_t!(matches.value_of("canonical_kmers"), bool).unwrap_or_else(|e| e.exit());
-    let kmer_distance = value_t!(matches.value_of("kmer_distance"), bool).unwrap_or_else(|e| e.exit());
+    let canonical_kmers =
+        value_t!(matches.value_of("canonical_kmers"), bool).unwrap_or_else(|e| e.exit());
+    let kmer_distance =
+        value_t!(matches.value_of("kmer_distance"), bool).unwrap_or_else(|e| e.exit());
 
     // create directory for output
     if let Err(e) = create_dir_all("./fw_out/") {
-        println!("[-]\tCreate directory error: {}", e.to_string());   
+        println!("[-]\tCreate directory error: {}", e.to_string());
     }
 
     // initiate the output CSV for windows
@@ -82,7 +83,12 @@ fn main() {
     if kmer_distance {
         writeln!(window_file, "ID,window,GC_percent,GC_skew,Shannon_entropy,{}mer_diversity_canonical_{},kmer_distance", kmer_size, canonical_kmers).unwrap();
     } else {
-        writeln!(window_file, "ID,window,GC_percent,GC_skew,Shannon_entropy,{}mer_diversity_canonical_{}", kmer_size, canonical_kmers).unwrap();
+        writeln!(
+            window_file,
+            "ID,window,GC_percent,GC_skew,Shannon_entropy,{}mer_diversity_canonical_{}",
+            kmer_size, canonical_kmers
+        )
+        .unwrap();
     }
 
     // second output file
@@ -91,9 +97,8 @@ fn main() {
     let mut chromosome_file = LineWriter::new(chromosome_file);
     // write headers
     if let Err(e) = writeln!(chromosome_file, "ID,Length,GC_percent") {
-        println!("[-]\tWriting error: {}", e.to_string());   
+        println!("[-]\tWriting error: {}", e.to_string());
     }
-        
     // read in the fasta from file
     let reader = fasta::Reader::from_file(input_fasta).expect("[-]\tPath invalid.");
 
@@ -108,8 +113,9 @@ fn main() {
         println!("[+]\tFirst pass of genome.");
         for result in kmer_reader.records() {
             let record = result.expect("Error during fasta record parsing");
-            // the current kmer hash 
-            let kmer_current = kmeru8::kmer_diversity(record.seq(), kmer_size, canonical_kmers).kmer_hash;
+            // the current kmer hash
+            let kmer_current =
+                kmeru8::kmer_diversity(record.seq(), kmer_size, canonical_kmers).kmer_hash;
             // merge current kmer hash with previous iteration
             let kmer_hash = utils::merge_hashmap_ip(kmer_hash, kmer_current);
         }
@@ -136,9 +142,30 @@ fn main() {
             let kmer_distance_value = utils::create_kmer_distance(kmer_stats.kmer_hash, kmer_hash);
             // ugly way of handling this but...
             if kmer_distance {
-                writeln!(window_file, "{},{},{},{},{},{},{}", record.id(), counter, seq_stats.gc_content, seq_stats.gc_skew, seq_stats.shannon_entropy, kmer_stats.kmer_diversity, kmer_distance_value).unwrap();    
+                writeln!(
+                    window_file,
+                    "{},{},{},{},{},{},{}",
+                    record.id(),
+                    counter,
+                    seq_stats.gc_content,
+                    seq_stats.gc_skew,
+                    seq_stats.shannon_entropy,
+                    kmer_stats.kmer_diversity,
+                    kmer_distance_value
+                )
+                .unwrap();
             } else {
-                writeln!(window_file, "{},{},{},{},{},{}", record.id(), counter, seq_stats.gc_content, seq_stats.gc_skew, seq_stats.shannon_entropy, kmer_stats.kmer_diversity).unwrap();
+                writeln!(
+                    window_file,
+                    "{},{},{},{},{},{}",
+                    record.id(),
+                    counter,
+                    seq_stats.gc_content,
+                    seq_stats.gc_skew,
+                    seq_stats.shannon_entropy,
+                    kmer_stats.kmer_diversity
+                )
+                .unwrap();
             }
             // re-set the counter if counter > length of current sequence
             if counter < record.seq().len() {
@@ -148,8 +175,14 @@ fn main() {
             }
         }
         // write chromosome level stats to file
-        if let Err(e) = writeln!(chromosome_file, "{},{},{}", record.id(), record.seq().len(), seq_statsu8::seq_stats(record.seq()).gc_content) {
-            println!("[-]\tWriting error: {}", e.to_string());   
+        if let Err(e) = writeln!(
+            chromosome_file,
+            "{},{},{}",
+            record.id(),
+            record.seq().len(),
+            seq_statsu8::seq_stats(record.seq()).gc_content
+        ) {
+            println!("[-]\tWriting error: {}", e.to_string());
         }
         println!("[+]\t{} processed.", record.id());
     }

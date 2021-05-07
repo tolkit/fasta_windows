@@ -1,10 +1,9 @@
 pub mod kmeru8 {
 
     use std::collections::HashMap;
-    
-    // still want to implement some kind of distance metric from 
+
+    // still want to implement some kind of distance metric from
     // a window to the genome wide kmer profile.
-    
     // currently canonical: true is quite a costly computation...
     pub struct KmerStats {
         pub kmer_hash: HashMap<Vec<u8>, i32>,
@@ -16,7 +15,6 @@ pub mod kmeru8 {
         let kmers = dna.windows(kmer_size);
         // store the kmers
         let mut map = HashMap::new();
-        
         for mut kmer in kmers {
             if canonical {
                 // switch to lexicographically lower kmer
@@ -26,14 +24,14 @@ pub mod kmeru8 {
                     kmer = &rev_kmer;
                 }
                 // skip where kmer contains an N (or any other invalid character?)
-                if kmer.contains(&b'N'){ 
-                    continue; 
-                } 
+                if kmer.contains(&b'N') {
+                    continue;
+                }
                 let count = map.entry(kmer.to_vec()).or_insert(0);
                 *count += 1;
             } else {
-                if kmer.contains(&b'N'){ 
-                    continue; 
+                if kmer.contains(&b'N') {
+                    continue;
                 }
                 let count = map.entry(kmer.to_vec()).or_insert(0);
                 *count += 1;
@@ -48,26 +46,25 @@ pub mod kmeru8 {
         }
     }
 
-fn reverse_complement(dna: &[u8]) -> Vec<u8> {
-    let dna_vec = dna.to_vec();
-    let mut revcomp = Vec::new();
+    fn reverse_complement(dna: &[u8]) -> Vec<u8> {
+        let dna_vec = dna.to_vec();
+        let mut revcomp = Vec::new();
 
-    for base in dna_vec.iter() {
-        revcomp.push(switch_base(*base))
+        for base in dna_vec.iter() {
+            revcomp.push(switch_base(*base))
+        }
+        revcomp.as_mut_slice().reverse();
+        revcomp
     }
-    revcomp.as_mut_slice().reverse();
-    revcomp
-}
 
-fn switch_base(c: u8) -> u8 {
-    match c {
-        b'A' => b'T',
-        b'C' => b'G',
-        b'T' => b'A',
-        b'G' => b'C',
-        b'N' => b'N',
-        _ => b'N', 
+    fn switch_base(c: u8) -> u8 {
+        match c {
+            b'A' => b'T',
+            b'C' => b'G',
+            b'T' => b'A',
+            b'G' => b'C',
+            b'N' => b'N',
+            _ => b'N',
+        }
     }
-}
-
 }
