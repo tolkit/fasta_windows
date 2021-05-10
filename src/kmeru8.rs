@@ -10,30 +10,42 @@ pub mod kmeru8 {
         pub kmer_diversity: usize,
     }
 
+    // this function takes a chromosome (scaff/contig) of &[u8] dna
+    // splits into overlapping windows of length k
+    // and collects them into a hashmap
+    // the length of the keys of this hashmap is the kmer diversity.
+
+    // if canonical: true
+    // the kmer and its reverse complement are considered
+    // and only the lexicographically 'smaller' kmer is stored in the map.
+
     pub fn kmer_diversity(dna: &[u8], kmer_size: usize, canonical: bool) -> KmerStats {
         // generate all the kmers in a window
         let kmers = dna.windows(kmer_size);
         // store the kmers
         let mut map = HashMap::new();
-        for mut kmer in kmers {
+        for kmer in kmers {
+            // kmer to upper
+            // unfortunately this creates a copy
+            // but in place manipulation seems difficult, because rust.
+            let mut kmer_upper = kmer.to_ascii_uppercase();
             if canonical {
                 // switch to lexicographically lower kmer
-                // probably inefficient...
-                let rev_kmer = reverse_complement(kmer);
-                if rev_kmer < kmer.to_vec() {
-                    kmer = &rev_kmer;
+                let rev_kmer = reverse_complement(&kmer_upper);
+                if rev_kmer < kmer_upper {
+                    kmer_upper = rev_kmer;
                 }
                 // skip where kmer contains an N (or any other invalid character?)
-                if kmer.contains(&b'N') {
+                if kmer_upper.contains(&b'N') {
                     continue;
                 }
-                let count = map.entry(kmer.to_vec()).or_insert(0);
+                let count = map.entry(kmer_upper).or_insert(0);
                 *count += 1;
             } else {
-                if kmer.contains(&b'N') {
+                if kmer_upper.contains(&b'N') {
                     continue;
                 }
-                let count = map.entry(kmer.to_vec()).or_insert(0);
+                let count = map.entry(kmer_upper).or_insert(0);
                 *count += 1;
             }
         }
@@ -56,6 +68,9 @@ pub mod kmeru8 {
         revcomp.as_mut_slice().reverse();
         revcomp
     }
+
+    // works on uppercase ascii, so
+    // no need for lowercase here.
 
     fn switch_base(c: u8) -> u8 {
         match c {

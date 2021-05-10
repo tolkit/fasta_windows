@@ -22,42 +22,54 @@ fn main() {
         .version(clap::crate_version!())
         .author("Max Brown <mb39@sanger.ac.uk>")
         .about("Quickly compute statistics over a fasta file in windows.")
-        .arg(Arg::with_name("fasta")
-                 .short("f")
-                 .long("fasta")
-                 .takes_value(true)
-                 .required(true)
-                 .help("The input fasta file."))
-        .arg(Arg::with_name("window_size")
-                 .short("w")
-                 .long("window_size")
-                 .help("Integer size of window for statistics to be computed over.")
-                 .takes_value(true)
-                 .default_value("1000"))
-        .arg(Arg::with_name("kmer_size")
-                 .short("k")
-                 .long("kmer_size")
-                 .help("Size of kmer to determine the diversity of in windows.")
-                 .takes_value(true)
-                 .default_value("4"))
-        .arg(Arg::with_name("canonical_kmers")
-                 .short("c")
-                 .long("canonical_kmers")
-                 .help("Should the canonical kmers be calculated? Boolean, input true or false.")
-                 .takes_value(true)
-                 .default_value("false"))
-        .arg(Arg::with_name("kmer_distance")
-                 .short("d")
-                 .long("kmer_distance")
-                 .help("Calculate kmer count distance to reference? Boolean, input true or false. NOTE experimental, needs QC.")
-                 .takes_value(true)
-                 .default_value("false"))
-        .arg(Arg::with_name("output")
-                 .short("o")
-                 .long("output")
-                 .help("Output filename for the CSV (without extension).")
-                 .takes_value(true)
-                 .required(true))
+        .arg(
+            Arg::with_name("fasta")
+                .short("f")
+                .long("fasta")
+                .takes_value(true)
+                .required(true)
+                .help("The input fasta file."),
+        )
+        .arg(
+            Arg::with_name("window_size")
+                .short("w")
+                .long("window_size")
+                .help("Integer size of window for statistics to be computed over.")
+                .takes_value(true)
+                .default_value("1000"),
+        )
+        .arg(
+            Arg::with_name("kmer_size")
+                .short("k")
+                .long("kmer_size")
+                .help("Size of kmer to determine the diversity of in windows.")
+                .takes_value(true)
+                .default_value("4"),
+        )
+        .arg(
+            Arg::with_name("canonical_kmers")
+                .short("c")
+                .long("canonical_kmers")
+                .help("Should the canonical kmers be calculated? Boolean, input true or false.")
+                .takes_value(true)
+                .default_value("false"),
+        )
+        .arg(
+            Arg::with_name("kmer_distance")
+                .short("d")
+                .long("kmer_distance")
+                .help("Calculate kmer count distance to reference? Boolean, input true or false.")
+                .takes_value(true)
+                .default_value("false"),
+        )
+        .arg(
+            Arg::with_name("output")
+                .short("o")
+                .long("output")
+                .help("Output filename for the CSV (without extension).")
+                .takes_value(true)
+                .required(true),
+        )
         .get_matches();
     // parse command line options
     let input_fasta = matches.value_of("fasta").unwrap();
@@ -81,11 +93,16 @@ fn main() {
 
     // and write the headers
     if kmer_distance {
-        writeln!(window_file, "ID,window,GC_percent,GC_skew,Shannon_entropy,{}mer_diversity_canonical_{},kmer_distance", kmer_size, canonical_kmers).unwrap();
+        writeln!(window_file, 
+            "ID\tstart\tend\tGC_percent\tGC_skew\tShannon_entropy\t{}mer_diversity_canonical_{}\tkmer_distance", 
+            kmer_size, 
+            canonical_kmers
+        )
+        .unwrap();
     } else {
         writeln!(
             window_file,
-            "ID,window,GC_percent,GC_skew,Shannon_entropy,{}mer_diversity_canonical_{}",
+            "ID\tstart\tend\tGC_percent\tGC_skew\tShannon_entropy\t{}mer_diversity_canonical_{}",
             kmer_size, canonical_kmers
         )
         .unwrap();
@@ -96,7 +113,7 @@ fn main() {
     let chromosome_file = File::create(&output_file_2).unwrap();
     let mut chromosome_file = LineWriter::new(chromosome_file);
     // write headers
-    if let Err(e) = writeln!(chromosome_file, "ID,Length,GC_percent") {
+    if let Err(e) = writeln!(chromosome_file, "ID\tLength\tGC_percent") {
         println!("[-]\tWriting error: {}", e.to_string());
     }
     // read in the fasta from file
@@ -144,8 +161,9 @@ fn main() {
             if kmer_distance {
                 writeln!(
                     window_file,
-                    "{},{},{},{},{},{},{}",
+                    "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
                     record.id(),
+                    counter - window_size,
                     counter,
                     seq_stats.gc_content,
                     seq_stats.gc_skew,
@@ -157,8 +175,9 @@ fn main() {
             } else {
                 writeln!(
                     window_file,
-                    "{},{},{},{},{},{}",
+                    "{}\t{}\t{}\t{}\t{}\t{}\t{}",
                     record.id(),
+                    counter - window_size,
                     counter,
                     seq_stats.gc_content,
                     seq_stats.gc_skew,
@@ -177,7 +196,7 @@ fn main() {
         // write chromosome level stats to file
         if let Err(e) = writeln!(
             chromosome_file,
-            "{},{},{}",
+            "{}\t{}\t{}",
             record.id(),
             record.seq().len(),
             seq_statsu8::seq_stats(record.seq()).gc_content

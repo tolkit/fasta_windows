@@ -1,9 +1,9 @@
-# fasta_windows.rs
+# fasta_windows
 
 Fast statistics in windows over a genome in fasta format.
 - GC content
 - GC skew
-- Kmer diversity (canonical or not; tested kmers up to 31 with little performance dip)
+- Kmer diversity
 - Kmer distance (optional), the euclidean distance of the kmer profile of the current window to the reference.
 - Shannon entropy
 
@@ -53,22 +53,24 @@ Or to use default kmer length and windows, and calculate kmer count distance fro
 
 ### Output
 
-Output are a CSV file with headers:
+Output is now a tsv with bed-like format in the first three columns:
+
+e.g. `fasta_windows -f [fasta] -o test` with no other options
 
 ```
-ID,window,GC_percent,GC_skew,Shannon_entropy,4mer_diversity_canonical_false
-NC_003070.9,1000,32.7,-0.10703364,1.8933459501670153,209
-NC_003070.9,2000,31.7,-0.05362776,1.8994159317068182,206
-NC_003070.9,3000,32.5,-0.1323077,1.905439536788656,216
-NC_003070.9,4000,33.399998,-0.011976048,1.9184021842094099,231
-NC_003070.9,5000,39.5,0.07848101,1.965667840754946,236
-NC_003070.9,6000,36.199997,0.13812155,1.9389668067700883,229
-NC_003070.9,7000,38,0.02631579,1.9565065330018037,233
-NC_003070.9,8000,34.1,-0.06158358,1.9070730536871001,217
-NC_003070.9,9000,34.4,-0.046511628,1.9220237551539758,227
+ID	start	end	GC_percent	GC_skew	Shannon_entropy	4mer_diversity_canonical_false
+NC_003070.9	0	1000	32.7	-0.10703364	1.8933459501670153	209
+NC_003070.9	1000	2000	31.7	-0.05362776	1.8994159317068182	206
+NC_003070.9	2000	3000	32.5	-0.1323077	1.905439536788656	216
+NC_003070.9	3000	4000	33.399998	-0.011976048	1.9184021842094099	231
+NC_003070.9	4000	5000	39.5	0.07848101	1.965667840754946	236
+NC_003070.9	5000	6000	36.199997	0.13812155	1.9389668067700883	229
+NC_003070.9	6000	7000	38	0.02631579	1.9565065330018037	233
+NC_003070.9	7000	8000	34.1	-0.06158358	1.9070730536871001	217
+NC_003070.9	8000	9000	34.4	-0.046511628	1.9220237551539758	227
 ```
 
-And also a file with chromosome lengths/GC per chromosome (anything else in there?). Printed to stdout is the number of sequences in the fasta file (ideally chromosomes), length of the total genome, and the N50.
+And also a tsv with chromosome lengths/GC per chromosome. Printed to stdout is the number of sequences in the fasta file (ideally chromosomes), length of the total genome, and the N50.
 
 ```
 [+]	NC_003070.9 processed.
