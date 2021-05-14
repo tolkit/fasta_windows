@@ -26,7 +26,7 @@ OPTIONS:
                                                [default: false]
     -f, --fasta <fasta>                        The input fasta file.
     -d, --kmer_distance <kmer_distance>        Calculate kmer count distance to reference? Boolean, input true or false.
-                                               NOTE experimental, needs QC. [default: false]
+                                               [default: false]
     -k, --kmer_size <kmer_size>                Size of kmer to determine the diversity of in windows. [default: 4]
     -o, --output <output>                      Output filename for the CSV (without extension).
     -w, --window_size <window_size>            Integer size of window for statistics to be computed over. [default:
@@ -45,7 +45,7 @@ For example, to iterate over a fasta file in windows of 100 base pairs, computin
 
 `./target/release/fasta_windows --fasta /path/to/your/fasta --kmer_size 3 --window_size 100 --output /path/to/output`
 
-Or to use default kmer length and windows, and calculate kmer count distance from window to genome wide:
+Or to use default kmer length and windows (1kb), and calculate kmer count distance from window to genome wide:
 
 `./target/release/fasta_windows --fasta /path/to/your/fasta --output /path/to/output --kmer_distance true`
 
@@ -99,3 +99,7 @@ real	0m17.823s
 user    0m17.068s
 sys     0m0.614s
 ```
+
+### Updates & bugs
+
+Please use, test, and let me know if there are any bugs or features you want implemented. Either raise an issue, or email me (see email in usage).
