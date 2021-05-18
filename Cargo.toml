@@ -1,6 +1,6 @@
 [package]
 name = "fasta_windows"
-version = "0.1.2"
+version = "0.2.0"
 authors = ["Max Brown <mb39@sanger.ac.uk>"]
 edition = "2018"
 
@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 bio = "*"
 clap = "~2.27.0"
+rayon = "1.5.0"

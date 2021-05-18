@@ -7,13 +7,15 @@ pub mod seq_statsu8 {
     // TODO: add at skew? at content?
     pub struct SeqStats {
         pub gc_content: f32,
+        pub gc_proportion: f32,
         pub gc_skew: f32,
         pub shannon_entropy: f64,
-        pub g_s: i32,
-        pub c_s: i32,
-        pub a_s: i32,
-        pub t_s: i32,
-        pub n_s: i32,
+        // proportions of nucleotides (& N's)
+        pub g_s: f32,
+        pub c_s: f32,
+        pub a_s: f32,
+        pub t_s: f32,
+        pub n_s: f32,
     }
     // function below reveals other ambiguous bases present in assemblies, not sure
     // how to deal with those yet.
@@ -57,13 +59,15 @@ pub mod seq_statsu8 {
         }
         SeqStats {
             gc_content: ((g_counts + c_counts) as f32 / length) * 100.0,
+            gc_proportion: ((g_counts + c_counts) as f32
+                / (g_counts + c_counts + a_counts + t_counts) as f32),
             gc_skew: (g_counts - c_counts) as f32 / (g_counts + c_counts) as f32,
             shannon_entropy: entropy,
-            g_s: g_counts,
-            c_s: c_counts,
-            a_s: a_counts,
-            t_s: t_counts,
-            n_s: n_counts,
+            g_s: ((g_counts) as f32 / length),
+            c_s: ((c_counts) as f32 / length),
+            a_s: ((a_counts) as f32 / length),
+            t_s: ((t_counts) as f32 / length),
+            n_s: ((n_counts) as f32 / length),
         }
     }
 }
