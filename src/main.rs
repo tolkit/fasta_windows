@@ -7,6 +7,7 @@ use std::io::BufWriter;
 extern crate clap; // forgot why I needed extern crate.
 use bio::io::fasta;
 use clap::{value_t, App, Arg};
+use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use std::sync::mpsc::channel;
 // internal imports
@@ -66,7 +67,7 @@ fn main() {
         println!("[-]\tCreate directory error: {}", e.to_string());
     }
 
-    // initiate the output TSV for windows
+    // initiate the output TSV for windows over genome
     let output_file_1 = format!("./fw_out/{}{}", output, "_windows.csv");
     let window_file = File::create(&output_file_1).unwrap();
     let mut window_file = BufWriter::new(window_file);
@@ -78,9 +79,7 @@ fn main() {
     )
     .unwrap();
 
-    // read in the fasta from file
-    let reader = fasta::Reader::from_file(input_fasta).expect("[-]\tPath invalid.");
-
+    // the output struct
     struct Output {
         id: String,
         start: usize,
@@ -99,9 +98,29 @@ fn main() {
         tetranucleotides: f64,
     }
 
-    // two channels for read lengths, and collecting output
+    // channel for collecting output
     let (sender, receiver) = channel();
 
+    // iterate over fasta to get number of sequences
+    // for the progress bar
+    let mut nb_reads = 0;
+    // read in the fasta from file
+    let mut reader = fasta::Reader::from_file(input_fasta)
+        .expect("[-]\tPath invalid.")
+        .records();
+    while let Some(Ok(_record)) = reader.next() {
+        nb_reads += 1;
+    }
+
+    let progress_bar = ProgressBar::new(nb_reads);
+    let pb_style = ProgressStyle::default_bar()
+        .template("[+]\tProcessing records: {bar:40.cyan/blue} {pos:>7}/{len:10}")
+        .progress_chars("##-");
+    progress_bar.set_style(pb_style);
+
+    // second reader for the computation
+    println!("[+]\tReading fasta from file");
+    let reader = fasta::Reader::from_file(input_fasta).expect("[-]\tPath invalid.");
     reader
         .records()
         .par_bridge()
@@ -148,11 +167,14 @@ fn main() {
                     counter = 0
                 }
             }
+            progress_bar.inc(1);
         });
+    progress_bar.finish();
     let mut res: Vec<Output> = receiver.iter().collect();
     // parallel iteration messes up the order, so we fix that here.
     res.sort_by_key(|x| x.id.clone());
     // write fastas.
+    println!("[+]\tWriting output to file");
     for i in &res {
         writeln!(
             window_file,
@@ -175,4 +197,5 @@ fn main() {
         )
         .unwrap_or_else(|_| println!("[-]\tError in writing to file."));
     }
+    println!("[+]\tOutput written to file: ./fw_out/{}", output);
 }

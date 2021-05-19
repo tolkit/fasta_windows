@@ -10,8 +10,10 @@ Fast statistics in windows over a genome in fasta format.
 
 ## Usage
 
+Fewer options than previous versions, as di/tri/tetranucleotide diversity is calculated instead of user input for kmer length.
+
 ```
-Fasta windows 0.1.2
+Fasta windows 0.2.0
 Max Brown <mb39@sanger.ac.uk>
 Quickly compute statistics over a fasta file in windows.
 
@@ -26,9 +28,6 @@ OPTIONS:
     -c, --canonical_kmers <canonical_kmers>    Should the canonical kmers be calculated? Boolean, input true or false.
                                                [default: false]
     -f, --fasta <fasta>                        The input fasta file.
-    -d, --kmer_distance <kmer_distance>        Calculate kmer count distance to reference? Boolean, input true or false.
-                                               [default: false]
-    -k, --kmer_size <kmer_size>                Size of kmer to determine the diversity of in windows. [default: 4]
     -o, --output <output>                      Output filename for the CSV (without extension).
     -w, --window_size <window_size>            Integer size of window for statistics to be computed over. [default:
                                                1000]
