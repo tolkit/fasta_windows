@@ -39,7 +39,7 @@ pub mod kmeru8 {
                 let mut kmers_u8: Vec<Vec<u8>> = Vec::new();
 
                 for i in kmers_str {
-                    kmers_u8.push(i.as_bytes().to_vec()); // to vec copies...
+                    kmers_u8.push(i.as_bytes().to_vec()); // to_vec copies...
                 }
 
                 // initiate a map
