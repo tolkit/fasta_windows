@@ -14,8 +14,6 @@ use std::sync::mpsc::channel;
 use fasta_windows::kmeru8::kmeru8;
 use fasta_windows::seq_statsu8::seq_statsu8;
 
-// TODO: can I implement multiple threads?
-
 fn main() {
     // command line options
     let matches = App::new("Fasta windows")
@@ -103,6 +101,7 @@ fn main() {
 
     // iterate over fasta to get number of sequences
     // for the progress bar
+    // this may waste a little time, but is there another option?
     let mut nb_reads = 0;
     // read in the fasta from file
     let mut reader = fasta::Reader::from_file(input_fasta)
@@ -197,5 +196,6 @@ fn main() {
         )
         .unwrap_or_else(|_| println!("[-]\tError in writing to file."));
     }
+    window_file.flush().unwrap();
     println!("[+]\tOutput written to file: ./fw_out/{}", output);
 }

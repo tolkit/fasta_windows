@@ -34,11 +34,12 @@ pub mod kmeru8 {
                 // generate all the kmers in a window
                 let kmers = dna.windows(i);
                 // store the kmers
+                // probably would be speedier to store these kmer maps
+                // or generate outside of a nested loop...
                 let kmer_map = gen_all_kmers(i);
-                let kmers_str: Vec<&str> = kmer_map.iter().map(|s| &**s).collect();
                 let mut kmers_u8: Vec<Vec<u8>> = Vec::new();
 
-                for i in kmers_str {
+                for i in kmer_map {
                     kmers_u8.push(i.as_bytes().to_vec()); // to_vec copies...
                 }
 
@@ -132,18 +133,13 @@ pub mod kmeru8 {
     fn shannon_diversity(vec: Vec<i32>) -> f64 {
         // sum elements to get proportions
         let vec_sum: i32 = vec.iter().sum();
-        // collect the proportions * ln(proportions)
-        let mut prop_logs: Vec<f64> = Vec::new();
+        let mut diversity = 0f64;
 
-        for e in vec {
-            if e > 0 {
-                prop_logs.push((e as f64 / vec_sum as f64) * ((e as f64) / vec_sum as f64).ln());
-            }
+        for count in vec.iter().filter(|count| **count > 0i32) {
+            let probability = *count as f64 / (vec_sum as f64);
+            diversity -= probability * probability.ln();
         }
-
-        // take the sum of these proportions * ln(proportions)
-        let res: f64 = prop_logs.iter().sum();
-        res * -1.0
+        diversity
     }
 
     fn reverse_complement(dna: &[u8]) -> Vec<u8> {
