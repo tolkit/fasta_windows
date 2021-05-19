@@ -72,7 +72,7 @@ fn main() {
 
     writeln!(
         window_file,
-        "ID\tstart\tend\tGC_content\tGC_prop\tGC_skew\tShannon_entropy\tProp_Gs\tProp_Cs\tProp_As\tProp_Ts\tProp_Ns\tDinucleotide_Shannon{arg}\tTrinucleotide_Shannon{arg}\tTetranucleotide_Shannon{arg}",
+        "ID\tstart\tend\tGC_prop\tGC_skew\tShannon_entropy\tProp_Gs\tProp_Cs\tProp_As\tProp_Ts\tProp_Ns\tDinucleotide_Shannon{arg}\tTrinucleotide_Shannon{arg}\tTetranucleotide_Shannon{arg}",
         arg = format!("_{}", canonical_kmers)
     )
     .unwrap();
@@ -82,7 +82,6 @@ fn main() {
         id: String,
         start: usize,
         end: usize,
-        gc_content: f32,
         gc_proportion: f32,
         gc_skew: f32,
         shannon_entropy: f64,
@@ -144,7 +143,6 @@ fn main() {
                     id: fasta_record.id().to_string(),
                     start: counter - window_size,
                     end: counter,
-                    gc_content: seq_stats.gc_content,
                     gc_proportion: seq_stats.gc_proportion,
                     gc_skew: seq_stats.gc_skew,
                     shannon_entropy: seq_stats.shannon_entropy,
@@ -177,11 +175,10 @@ fn main() {
     for i in &res {
         writeln!(
             window_file,
-            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
+            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
             i.id,
             i.start,
             i.end,
-            i.gc_content,
             i.gc_proportion,
             i.gc_skew,
             i.shannon_entropy,

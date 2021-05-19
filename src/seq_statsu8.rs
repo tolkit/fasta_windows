@@ -6,7 +6,6 @@ pub mod seq_statsu8 {
 
     // TODO: add at skew? at content?
     pub struct SeqStats {
-        pub gc_content: f32,
         pub gc_proportion: f32,
         pub gc_skew: f32,
         pub shannon_entropy: f64,
@@ -58,7 +57,6 @@ pub mod seq_statsu8 {
             entropy -= byte_probability * byte_probability.log2();
         }
         SeqStats {
-            gc_content: ((g_counts + c_counts) as f32 / length) * 100.0,
             gc_proportion: ((g_counts + c_counts) as f32
                 / (g_counts + c_counts + a_counts + t_counts) as f32),
             gc_skew: (g_counts - c_counts) as f32 / (g_counts + c_counts) as f32,
