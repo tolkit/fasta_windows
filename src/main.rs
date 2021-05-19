@@ -114,8 +114,8 @@ fn main() {
 
     let progress_bar = ProgressBar::new(nb_reads);
     let pb_style = ProgressStyle::default_bar()
-        .template("[+]\tProcessing records: {bar:40.cyan/blue} {pos:>7}/{len:10}")
-        .progress_chars("##-");
+        .template("[+]\tProcessing records: {bar:40.cyan/blue} {pos:>7}/{len:12}")
+        .progress_chars(">>-");
     progress_bar.set_style(pb_style);
 
     // second reader for the computation
