@@ -45,7 +45,7 @@ The default window size is 1kb.
 
 ## Output & benchmarks
 
-The only annoying overhead at the moment is
+The only annoying overhead at the moment is sequence counting for the progress bar, which must be computed before the progress bar is initiated.
 
 ### Output
 

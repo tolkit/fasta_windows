@@ -1,14 +1,14 @@
 pub mod kmeru8 {
 
+    use crate::kmer_maps::kmer_maps::KmerMap;
     use rayon::prelude::*;
-    use std::collections::HashMap;
     use std::sync::mpsc::channel;
 
     // calculating shannon diversity of di/tri/tetranucleotides
-
     // convenience struct
     pub struct KmerStats {
-        pub kmer_length: i32,
+        pub freq_dist_k: Vec<i32>,
+        pub kmer_length: usize,
         pub shannon: f64,
     }
 
@@ -17,6 +17,9 @@ pub mod kmeru8 {
         pub dinucleotides: f64,
         pub trinucleotides: f64,
         pub tetranucleotides: f64,
+        pub di_freq: Vec<i32>,
+        pub tri_freq: Vec<i32>,
+        pub tetra_freq: Vec<i32>,
     }
 
     // if canonical: true
@@ -24,80 +27,89 @@ pub mod kmeru8 {
     // and only the lexicographically 'smaller' kmer is stored in the map.
     // I think this should still work given the restructure? check...
 
-    pub fn kmer_diversity(dna: &[u8], canonical: bool) -> ShannonDiversity {
+    pub fn kmer_diversity(
+        dna: &[u8],
+        kmer_maps: Vec<KmerMap>,
+        canonical: bool,
+    ) -> ShannonDiversity {
         // parallel iterate over 2-4mers
         let (sender, receiver) = channel();
-        (2usize..5usize)
-            .into_par_iter()
-            .for_each_with(sender, |s, i| {
-                // need to do di/tri/tetranucleotides
-                // generate all the kmers in a window
-                let kmers = dna.windows(i);
-                // store the kmers
-                // probably would be speedier to store these kmer maps
-                // or generate outside of a nested loop...
-                let kmer_map = gen_all_kmers(i);
-                let mut kmers_u8: Vec<Vec<u8>> = Vec::new();
+        kmer_maps.into_par_iter().for_each_with(sender, |s, i| {
+            // need to do di/tri/tetranucleotides
+            // generate all the kmers in a window
+            let kmers = dna.windows(i.len);
+            let mut map = i.map;
 
-                for i in kmer_map {
-                    kmers_u8.push(i.as_bytes().to_vec()); // to_vec copies...
-                }
-
-                // initiate a map
-                let mut map = HashMap::new();
-                // insert all the possible kmers as keys
-                for k in kmers_u8 {
-                    map.insert(k, 0i32);
-                }
-
-                // iterate over sliding windows of length k
-                for kmer in kmers {
-                    // kmer to upper
-                    // unfortunately this creates a copy
-                    // but in place manipulation seems difficult, because rust.
-                    let mut kmer_upper = kmer.to_ascii_uppercase();
-                    if canonical {
-                        // switch to lexicographically lower kmer
-                        let rev_kmer = reverse_complement(&kmer_upper);
-                        if rev_kmer < kmer_upper {
-                            kmer_upper = rev_kmer;
-                        }
-                        // skip where kmer contains an N (or any other invalid character?)
-                        if kmer_upper.contains(&b'N') || kmer_upper.contains(&b'n') {
-                            continue;
-                        }
-                        let count = map.entry(kmer_upper).or_insert(0);
-                        *count += 1;
-                    } else {
-                        if kmer_upper.contains(&b'N') || kmer_upper.contains(&b'n') {
-                            continue;
-                        }
-                        let count = map.entry(kmer_upper).or_insert(0);
-                        *count += 1;
+            // iterate over sliding windows of length k
+            for kmer in kmers {
+                // kmer to upper
+                // unfortunately this creates a copy
+                // but in place manipulation seems difficult, because rust.
+                let mut kmer_upper = kmer.to_ascii_uppercase();
+                if canonical {
+                    // switch to lexicographically lower kmer
+                    let rev_kmer = reverse_complement(&kmer_upper);
+                    if rev_kmer < kmer_upper {
+                        kmer_upper = rev_kmer;
                     }
+                    // skip where kmer contains an N (or any other invalid character?)
+                    if kmer_upper.contains(&b'N') || kmer_upper.contains(&b'n') {
+                        continue;
+                    }
+                    let count = map.entry(kmer_upper).or_insert(0);
+                    *count += 1;
+                } else {
+                    if kmer_upper.contains(&b'N') || kmer_upper.contains(&b'n') {
+                        continue;
+                    }
+                    let count = map.entry(kmer_upper).or_insert(0);
+                    *count += 1;
                 }
-                // now calculate shannon diversity
-                let shannon = shannon_diversity(map.values().cloned().collect());
+            }
+            // now calculate shannon diversity
+            let shannon = shannon_diversity(map.values().cloned().collect());
 
-                s.send(KmerStats {
-                    kmer_length: i as i32,
-                    shannon: shannon,
-                })
-                .expect("KmerStats did not send!");
-            });
+            // save the hashmap here too.
+            // HashMap -> Vec -> sorted Vec by HashMap keys
+            // so keys should always be in the same order.
+            let mut map_vec: Vec<_> = map.into_iter().collect();
+            map_vec.sort_by(|x, y| x.0.cmp(&y.0));
+            let values: Vec<i32> = map_vec.iter().map(|(_x, y)| *y).collect();
+
+            s.send(KmerStats {
+                freq_dist_k: values,
+                kmer_length: i.len,
+                shannon: shannon,
+            })
+            .expect("KmerStats did not send!");
+        });
         // collect stats
         let kmer_stats: Vec<KmerStats> = receiver.iter().collect();
 
         // decompose into separate shannon indices
+        // and the k-mer freq spectra
+        // TODO: is there a better way to do this?
         let mut dinucleotides: f64 = 0.0;
         let mut trinucleotides: f64 = 0.0;
         let mut tetranucleotides: f64 = 0.0;
+        let mut divalues: Vec<i32> = Vec::new();
+        let mut trivalues: Vec<i32> = Vec::new();
+        let mut tetravalues: Vec<i32> = Vec::new();
 
         for stat in kmer_stats {
             match stat.kmer_length {
-                2i32 => dinucleotides += stat.shannon,
-                3i32 => trinucleotides += stat.shannon,
-                4i32 => tetranucleotides += stat.shannon,
+                2usize => {
+                    dinucleotides += stat.shannon;
+                    divalues = stat.freq_dist_k;
+                }
+                3usize => {
+                    trinucleotides += stat.shannon;
+                    trivalues = stat.freq_dist_k;
+                }
+                4usize => {
+                    tetranucleotides += stat.shannon;
+                    tetravalues = stat.freq_dist_k;
+                }
                 _ => (),
             }
         }
@@ -106,27 +118,10 @@ pub mod kmeru8 {
             dinucleotides: dinucleotides,
             trinucleotides: trinucleotides,
             tetranucleotides: tetranucleotides,
+            di_freq: divalues,
+            tri_freq: trivalues,
+            tetra_freq: tetravalues,
         }
-    }
-
-    // Nice recursive function from
-    // https://github.com/szhongren/b363-bioinformatics/blob/2495b36575887222f5b1c266046fdd6ded23bf68/lab/challenge/src/main.rs
-    fn gen_all_kmers(k: usize) -> Vec<String> {
-        let mut output: Vec<String> = Vec::new();
-        let nucleotides = ["A", "C", "G", "T"].iter().map(|x| x.to_string()).collect();
-        if k == 0 {
-            return output;
-        } else if k == 1 {
-            return nucleotides;
-        } else {
-            for suffix in gen_all_kmers(k - 1) {
-                for nt in &nucleotides {
-                    let new = suffix.clone() + &nt;
-                    output.push(new);
-                }
-            }
-        }
-        output
     }
 
     // using the natural log

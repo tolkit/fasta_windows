@@ -11,9 +11,13 @@ use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use std::sync::mpsc::channel;
 // internal imports
+use fasta_windows::kmer_maps::kmer_maps;
 use fasta_windows::kmeru8::kmeru8;
 use fasta_windows::seq_statsu8::seq_statsu8;
 
+// TODO: add option to print to stdout
+//     : reduce floating point accuracy to ~3 decimal places..?
+//     : write/print array of kmer frequencies. This will require some formatting
 fn main() {
     // command line options
     let matches = App::new("Fasta windows")
@@ -62,11 +66,11 @@ fn main() {
 
     // create directory for output
     if let Err(e) = create_dir_all("./fw_out/") {
-        println!("[-]\tCreate directory error: {}", e.to_string());
+        eprintln!("[-]\tCreate directory error: {}", e.to_string());
     }
 
     // initiate the output TSV for windows over genome
-    let output_file_1 = format!("./fw_out/{}{}", output, "_windows.csv");
+    let output_file_1 = format!("./fw_out/{}{}", output, "_windows.tsv");
     let window_file = File::create(&output_file_1).unwrap();
     let mut window_file = BufWriter::new(window_file);
 
@@ -76,6 +80,18 @@ fn main() {
         arg = format!("_{}", canonical_kmers)
     )
     .unwrap();
+
+    let output_file_2 = format!("./fw_out/{}{}", output, "_dinuc_windows.tsv");
+    let window_file_2 = File::create(&output_file_2).unwrap();
+    let mut window_file_2 = BufWriter::new(window_file_2);
+
+    let output_file_3 = format!("./fw_out/{}{}", output, "_trinuc_windows.tsv");
+    let window_file_3 = File::create(&output_file_3).unwrap();
+    let mut window_file_3 = BufWriter::new(window_file_3);
+
+    let output_file_4 = format!("./fw_out/{}{}", output, "_tetranuc_windows.tsv");
+    let window_file_4 = File::create(&output_file_4).unwrap();
+    let mut window_file_4 = BufWriter::new(window_file_4);
 
     // the output struct
     struct Output {
@@ -93,7 +109,13 @@ fn main() {
         dinucleotides: f64,
         trinucleotides: f64,
         tetranucleotides: f64,
+        divalues: Vec<i32>,
+        trivalues: Vec<i32>,
+        tetravalues: Vec<i32>,
     }
+
+    // compute the 2-4mer kmer maps once only
+    let kmer_maps = kmer_maps::generate_kmer_maps();
 
     // channel for collecting output
     let (sender, receiver) = channel();
@@ -117,7 +139,7 @@ fn main() {
     progress_bar.set_style(pb_style);
 
     // second reader for the computation
-    println!("[+]\tReading fasta from file");
+    eprintln!("[+]\tReading fasta from file");
     let reader = fasta::Reader::from_file(input_fasta).expect("[-]\tPath invalid.");
     reader
         .records()
@@ -137,7 +159,7 @@ fn main() {
 
                 // this bit is bloody clunky
                 // unpack values
-                let kmer_stats = kmeru8::kmer_diversity(win, canonical_kmers);
+                let kmer_stats = kmeru8::kmer_diversity(win, kmer_maps.clone(), canonical_kmers);
 
                 s.send(Output {
                     id: fasta_record.id().to_string(),
@@ -154,6 +176,9 @@ fn main() {
                     dinucleotides: kmer_stats.dinucleotides,
                     trinucleotides: kmer_stats.trinucleotides,
                     tetranucleotides: kmer_stats.tetranucleotides,
+                    divalues: kmer_stats.di_freq,
+                    trivalues: kmer_stats.tri_freq,
+                    tetravalues: kmer_stats.tetra_freq,
                 })
                 .unwrap();
 
@@ -168,10 +193,12 @@ fn main() {
         });
     progress_bar.finish();
     let mut res: Vec<Output> = receiver.iter().collect();
-    // parallel iteration messes up the order, so we fix that here.
+    // parallel iteration messes up the order of scaffold ID's, so we fix that here.
+    // however, within ID's windows should be ordered.
     res.sort_by_key(|x| x.id.clone());
-    // write fastas.
-    println!("[+]\tWriting output to file");
+
+    // write files
+    eprintln!("[+]\tWriting output to files");
     for i in &res {
         writeln!(
             window_file,
@@ -194,5 +221,46 @@ fn main() {
         .unwrap_or_else(|_| println!("[-]\tError in writing to file."));
     }
     window_file.flush().unwrap();
-    println!("[+]\tOutput written to file: ./fw_out/{}", output);
+
+    // these are the arrays, tab separated bed-like format.
+    for i in &res {
+        writeln!(
+            window_file_2,
+            "{}\t{}\t{}\t{}",
+            i.id,
+            i.start,
+            i.end,
+            kmer_maps::WriteArray(i.divalues.clone())
+        )
+        .unwrap_or_else(|_| println!("[-]\tError in writing to file."));
+    }
+    window_file_2.flush().unwrap();
+    //
+    for i in &res {
+        writeln!(
+            window_file_3,
+            "{}\t{}\t{}\t{}",
+            i.id,
+            i.start,
+            i.end,
+            kmer_maps::WriteArray(i.trivalues.clone())
+        )
+        .unwrap_or_else(|_| println!("[-]\tError in writing to file."));
+    }
+    window_file_3.flush().unwrap();
+    //
+    for i in &res {
+        writeln!(
+            window_file_4,
+            "{}\t{}\t{}\t{}",
+            i.id,
+            i.start,
+            i.end,
+            kmer_maps::WriteArray(i.tetravalues.clone())
+        )
+        .unwrap_or_else(|_| println!("[-]\tError in writing to file."));
+    }
+    window_file_4.flush().unwrap();
+
+    eprintln!("[+]\tOutput written to directory: ./fw_out/{}", output);
 }
