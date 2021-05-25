@@ -3,13 +3,14 @@
 use std::fs::{create_dir_all, File};
 use std::io::prelude::*;
 use std::io::BufWriter;
+use std::sync::mpsc::channel;
+
 // non-std
-extern crate clap; // forgot why I needed extern crate.
 use bio::io::fasta;
 use clap::{value_t, App, Arg};
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
-use std::sync::mpsc::channel;
+
 // internal imports
 use fasta_windows::kmer_maps::kmer_maps;
 use fasta_windows::kmeru8::kmeru8;
@@ -198,11 +199,15 @@ fn main() {
     res.sort_by_key(|x| x.id.clone());
 
     // write files
+    // I pass over &res four times here...
+    // pretty inefficient.
+
     eprintln!("[+]\tWriting output to files");
     for i in &res {
         writeln!(
             window_file,
-            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
+            // :.4 three decimal places?
+            "{}\t{}\t{}\t{}\t{:.3}\t{:.3}\t{}\t{}\t{}\t{}\t{}\t{:.3}\t{:.3}\t{:.3}",
             i.id,
             i.start,
             i.end,

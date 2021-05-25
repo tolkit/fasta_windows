@@ -52,14 +52,14 @@ pub mod kmeru8 {
                     if rev_kmer < kmer_upper {
                         kmer_upper = rev_kmer;
                     }
-                    // skip where kmer contains an N (or any other invalid character?)
-                    if kmer_upper.contains(&b'N') || kmer_upper.contains(&b'n') {
+                    // skip where kmer contains an N (or any other invalid characters?)
+                    if kmer_upper.contains(&b'N') {
                         continue;
                     }
                     let count = map.entry(kmer_upper).or_insert(0);
                     *count += 1;
                 } else {
-                    if kmer_upper.contains(&b'N') || kmer_upper.contains(&b'n') {
+                    if kmer_upper.contains(&b'N') {
                         continue;
                     }
                     let count = map.entry(kmer_upper).or_insert(0);
@@ -79,7 +79,7 @@ pub mod kmeru8 {
             s.send(KmerStats {
                 freq_dist_k: values,
                 kmer_length: i.len,
-                shannon: shannon,
+                shannon,
             })
             .expect("KmerStats did not send!");
         });
@@ -115,9 +115,9 @@ pub mod kmeru8 {
         }
 
         ShannonDiversity {
-            dinucleotides: dinucleotides,
-            trinucleotides: trinucleotides,
-            tetranucleotides: tetranucleotides,
+            dinucleotides,
+            trinucleotides,
+            tetranucleotides,
             di_freq: divalues,
             tri_freq: trivalues,
             tetra_freq: tetravalues,

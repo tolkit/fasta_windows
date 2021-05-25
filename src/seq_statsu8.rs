@@ -4,7 +4,7 @@ pub mod seq_statsu8 {
 
     use std::collections::HashMap;
 
-    // TODO: add at skew? at content?
+    // TODO: add AT skew? AT content?
     pub struct SeqStats {
         pub gc_proportion: f32,
         pub gc_skew: f32,
