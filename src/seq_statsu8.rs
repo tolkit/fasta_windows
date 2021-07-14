@@ -31,18 +31,33 @@ pub mod seq_statsu8 {
     }
 
     // store each u8 in a hashmap, extract the values and summarise
-
-    pub fn seq_stats(dna: &[u8]) -> SeqStats {
+    // add in here option to pass over lowercase letters
+    pub fn seq_stats(dna: &[u8], masked: bool) -> SeqStats {
         // sequence length
         let length: f32 = dna.len() as f32;
         // G/C/A/T counts
         let counts = nucleotide_counts(dna);
         // upper and lower cases accounted for.
-        let g_counts = counts.get(&71).unwrap_or(&0) + counts.get(&103).unwrap_or(&0); // 71 == G; 103 == g
-        let c_counts = counts.get(&67).unwrap_or(&0) + counts.get(&99).unwrap_or(&0); // 67 == C; 99 == c
-        let a_counts = counts.get(&65).unwrap_or(&0) + counts.get(&97).unwrap_or(&0); // 65 == A; 97 == a
-        let t_counts = counts.get(&84).unwrap_or(&0) + counts.get(&116).unwrap_or(&0); // 84 == T; 116 == t
-        let n_counts = counts.get(&78).unwrap_or(&0) + counts.get(&110).unwrap_or(&0); // 78 == N; 110 == n
+
+        let g_counts: i32;
+        let c_counts: i32;
+        let a_counts: i32;
+        let t_counts: i32;
+        let n_counts: i32;
+
+        if masked {
+            g_counts = *counts.get(&71).unwrap_or(&0); // 71 == G;
+            c_counts = *counts.get(&67).unwrap_or(&0); // 67 == C;
+            a_counts = *counts.get(&65).unwrap_or(&0); // 65 == A;
+            t_counts = *counts.get(&84).unwrap_or(&0); // 84 == T;
+            n_counts = *counts.get(&78).unwrap_or(&0); // 78 == N;
+        } else {
+            g_counts = counts.get(&71).unwrap_or(&0) + counts.get(&103).unwrap_or(&0); // 71 == G; 103 == g
+            c_counts = counts.get(&67).unwrap_or(&0) + counts.get(&99).unwrap_or(&0); // 67 == C; 99 == c
+            a_counts = counts.get(&65).unwrap_or(&0) + counts.get(&97).unwrap_or(&0); // 65 == A; 97 == a
+            t_counts = counts.get(&84).unwrap_or(&0) + counts.get(&116).unwrap_or(&0); // 84 == T; 116 == t
+            n_counts = counts.get(&78).unwrap_or(&0) + counts.get(&110).unwrap_or(&0); // 78 == N; 110 == n
+        }
 
         // shannon entropy of the window
         // see https://github.com/fkie-cad/entropython/blob/main/src/lib.rs

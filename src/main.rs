@@ -16,9 +16,6 @@ use fasta_windows::kmer_maps::kmer_maps;
 use fasta_windows::kmeru8::kmeru8;
 use fasta_windows::seq_statsu8::seq_statsu8;
 
-// TODO: add option to print to stdout
-//     : reduce floating point accuracy to ~3 decimal places..?
-//     : write/print array of kmer frequencies. This will require some formatting
 fn main() {
     // command line options
     let matches = App::new("Fasta windows")
@@ -57,6 +54,12 @@ fn main() {
                 .takes_value(true)
                 .required(true),
         )
+        .arg(
+            Arg::with_name("masked")
+                .short("m")
+                .long("masked")
+                .help("If this flag is present, only uppercase nucleotides are considered in the calculations."),  
+        )
         .get_matches();
     // parse command line options
     let input_fasta = matches.value_of("fasta").unwrap();
@@ -64,6 +67,7 @@ fn main() {
     let window_size = value_t!(matches.value_of("window_size"), usize).unwrap_or_else(|e| e.exit());
     let canonical_kmers =
         value_t!(matches.value_of("canonical_kmers"), bool).unwrap_or_else(|e| e.exit());
+    let masked = matches.is_present("masked");
 
     // create directory for output
     if let Err(e) = create_dir_all("./fw_out/") {
@@ -156,9 +160,8 @@ fn main() {
             let windows = fasta_record.seq().chunks(window_size);
 
             for win in windows {
-                let seq_stats = seq_statsu8::seq_stats(win);
+                let seq_stats = seq_statsu8::seq_stats(win, masked);
 
-                // this bit is bloody clunky
                 // unpack values
                 let kmer_stats = kmeru8::kmer_diversity(win, kmer_maps.clone(), canonical_kmers);
 
@@ -206,7 +209,7 @@ fn main() {
     for i in &res {
         writeln!(
             window_file,
-            // :.4 three decimal places?
+            // :.3 three decimal places
             "{}\t{}\t{}\t{}\t{:.3}\t{:.3}\t{}\t{}\t{}\t{}\t{}\t{:.3}\t{:.3}\t{:.3}",
             i.id,
             i.start,
@@ -223,7 +226,7 @@ fn main() {
             i.trinucleotides,
             i.tetranucleotides,
         )
-        .unwrap_or_else(|_| println!("[-]\tError in writing to file."));
+        .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
     }
     window_file.flush().unwrap();
 
@@ -237,7 +240,7 @@ fn main() {
             i.end,
             kmer_maps::WriteArray(i.divalues.clone())
         )
-        .unwrap_or_else(|_| println!("[-]\tError in writing to file."));
+        .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
     }
     window_file_2.flush().unwrap();
     //
@@ -250,7 +253,7 @@ fn main() {
             i.end,
             kmer_maps::WriteArray(i.trivalues.clone())
         )
-        .unwrap_or_else(|_| println!("[-]\tError in writing to file."));
+        .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
     }
     window_file_3.flush().unwrap();
     //
@@ -263,7 +266,7 @@ fn main() {
             i.end,
             kmer_maps::WriteArray(i.tetravalues.clone())
         )
-        .unwrap_or_else(|_| println!("[-]\tError in writing to file."));
+        .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
     }
     window_file_4.flush().unwrap();
 
