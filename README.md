@@ -13,15 +13,16 @@ Fast statistics in windows over a genome in fasta format.
 Fewer options than previous versions, as di/tri/tetranucleotide diversity is calculated instead of user input for kmer length.
 
 ```
-Fasta windows 0.2.0
+Fasta windows 0.2.1
 Max Brown <mb39@sanger.ac.uk>
 Quickly compute statistics over a fasta file in windows.
 
 USAGE:
-    fasta_windows [OPTIONS] --fasta <fasta> --output <output>
+    fasta_windows [FLAGS] [OPTIONS] --fasta <fasta> --output <output>
 
 FLAGS:
     -h, --help       Prints help information
+    -m, --masked     Consider only uppercase nucleotides in the calculations.
     -V, --version    Prints version information
 
 OPTIONS:
@@ -33,13 +34,18 @@ OPTIONS:
                                                1000]
 ```
 
-You have to complile yourself. <a href="https://www.rust-lang.org/tools/install">Download rust</a>, clone this repo, and then run:
+## Building
 
-`cargo build --release`
+Building <a href="https://www.rust-lang.org/tools/install">requires Rust</a>. 
 
-Compiling may take a couple of minutes. This will then make the compiled binary in the `target/release` directory.
-
-Run `./target/release/fasta_windows --help` to display the help message in the terminal.
+```bash
+git clone https://github.com/tolkit/fasta_windows
+cd fasta_windows
+cargo build --release
+# ./target/release/fasta_windows is the executable
+# show help
+./target/release/fasta_windows --help
+```
 
 The default window size is 1kb.
 
@@ -53,17 +59,33 @@ Output is now a tsv with bed-like format in the first three columns:
 
 ```
 ID      start   end     GC_prop GC_skew Shannon_entropy Prop_Gs Prop_Cs Prop_As Prop_Ts Prop_Ns Dinucleotide_Shannon_false      Trinucleotide_Shannon_false Tetranucleotide_Shannon_false
-SUPER_1 0       1000    0.452   -0.2699115      1.928739902650348       0.165   0.287   0.361   0.187   0       2.6459008551823886 3.928519261697192        5.133591371839395
-SUPER_1 1000    2000    0.34    -0.33529413     1.8955852733798557      0.113   0.227   0.346   0.314   0       2.6167836230348853 3.8722623719711  5.015274395434933
-SUPER_1 2000    3000    0.388   -0.91237116     1.627180642639534       0.017   0.371   0.407   0.205   0       1.858410057857901  2.0494842744481336       2.09550303360082
-SUPER_1 3000    4000    0.634   -0.16719243     1.9326861804290671      0.264   0.37    0.199   0.167   0       2.6709080342328937 3.9796052529877928       5.214642263562323
-SUPER_1 4000    5000    0.591   -0.18443316     1.9543596224588031      0.241   0.35    0.236   0.173   0       2.701288242079077  4.0199349099815  5.232032920693032
-SUPER_1 5000    6000    0.599   -0.22871453     1.9477765017208162      0.231   0.368   0.212   0.189   0       2.6791744546822502 3.990975528462955        5.20873424760944
-SUPER_1 6000    7000    0.596   -0.16442953     1.9605365300597528      0.249   0.347   0.214   0.19    0       2.6935889794270693 3.9940001045093587       5.206001722737892
-SUPER_1 7000    8000    0.602   -0.19269103     1.9503405864559629      0.243   0.359   0.178   0.22    0       2.671998818221988  3.9740681661842774       5.184128931560171
-SUPER_1 8000    9000    0.453   -0.21412803     1.9767106890447885      0.178   0.275   0.292   0.255   0       2.7253730593872803 4.030994655335826        5.2367638611178435
+SUPER_1 0       1000    0.452   -0.270  1.929   0.165   0.287   0.361   0.187   0       2.646   3.929   5.134
+SUPER_1 1000    2000    0.34    -0.335  1.896   0.113   0.227   0.346   0.314   0       2.617   3.872   5.015
+SUPER_1 2000    3000    0.388   -0.912  1.627   0.017   0.371   0.407   0.205   0       1.858   2.049   2.096
+SUPER_1 3000    4000    0.634   -0.167  1.933   0.264   0.37    0.199   0.167   0       2.671   3.980   5.215
+SUPER_1 4000    5000    0.591   -0.184  1.954   0.241   0.35    0.236   0.173   0       2.701   4.020   5.232
+SUPER_1 5000    6000    0.599   -0.229  1.948   0.231   0.368   0.212   0.189   0       2.679   3.991   5.209
+SUPER_1 6000    7000    0.596   -0.164  1.961   0.249   0.347   0.214   0.19    0       2.694   3.994   5.206
+SUPER_1 7000    8000    0.602   -0.193  1.950   0.243   0.359   0.178   0.22    0       2.672   3.974   5.184
+SUPER_1 8000    9000    0.453   -0.214  1.977   0.178   0.275   0.292   0.255   0       2.725   4.031   5.237
 ```
 
+Also output (non-optional at the moment), are three more TSV's, which are the arrays of di/tri/tetranucleotide frequencies in each window. These files are large, especially as tetranucleotide frequencies will contain 4e4 columns. The kmers are sorted lexicographically from left -> right (AA(AA) to TT(TT)).
+
+e.g. for dinucleotide frequencies:
+
+```
+SUPER_1 0       1000    122     120     45      73      134     68      39      46      50      55      45      15      54      44 36       53
+SUPER_1 1000    2000    140     83      32      90      85      54      22      66      30      25      19      39      91      65 40       118
+SUPER_1 2000    3000    216     181     4       5       4       181     5       181     3       8       3       3       183     1  516
+SUPER_1 3000    4000    40      61      54      44      80      137     86      66      54      99      76      35      24      73 48       22
+SUPER_1 4000    5000    55      68      75      38      88      138     66      57      58      78      59      46      35      65 41       32
+SUPER_1 5000    6000    32      71      63      46      85      137     71      75      65      66      65      34      30      94 31       34
+SUPER_1 6000    7000    47      62      63      42      91      132     60      64      58      84      74      32      18      69 51       52
+SUPER_1 7000    8000    29      49      64      35      67      143     52      97      58      82      72      31      24      85 55       56
+SUPER_1 8000    9000    114     67      43      68      63      86      52      73      51      49      43      35      64      73 40       78
+SUPER_1 9000    10000   97      97      44      63      72      95      50      67      46      44      33      46      85      49 42       69
+```
 
 ### Updates & bugs
 

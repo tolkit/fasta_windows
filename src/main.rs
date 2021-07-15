@@ -58,7 +58,7 @@ fn main() {
             Arg::with_name("masked")
                 .short("m")
                 .long("masked")
-                .help("If this flag is present, only uppercase nucleotides are considered in the calculations."),  
+                .help("Consider only uppercase nucleotides in the calculations."),
         )
         .get_matches();
     // parse command line options
