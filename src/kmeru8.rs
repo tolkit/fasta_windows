@@ -46,6 +46,7 @@ pub mod kmeru8 {
                 // unfortunately this creates a copy
                 // but in place manipulation seems difficult, because rust.
                 let mut kmer_upper = kmer.to_ascii_uppercase();
+                // canonical is really slow compared to non-canonical.
                 if canonical {
                     // switch to lexicographically lower kmer
                     let rev_kmer = reverse_complement(&kmer_upper);
@@ -137,7 +138,7 @@ pub mod kmeru8 {
         diversity
     }
 
-    fn reverse_complement(dna: &[u8]) -> Vec<u8> {
+    pub fn reverse_complement(dna: &[u8]) -> Vec<u8> {
         let dna_vec = dna.to_vec();
         let mut revcomp = Vec::new();
 

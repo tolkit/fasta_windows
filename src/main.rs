@@ -42,9 +42,7 @@ fn main() {
             Arg::with_name("canonical_kmers")
                 .short("c")
                 .long("canonical_kmers")
-                .help("Should the canonical kmers be calculated? Boolean, input true or false.")
-                .takes_value(true)
-                .default_value("false"),
+                .help("Should the canonical kmers be calculated?"),
         )
         .arg(
             Arg::with_name("output")
@@ -65,8 +63,7 @@ fn main() {
     let input_fasta = matches.value_of("fasta").unwrap();
     let output = matches.value_of("output").unwrap();
     let window_size = value_t!(matches.value_of("window_size"), usize).unwrap_or_else(|e| e.exit());
-    let canonical_kmers =
-        value_t!(matches.value_of("canonical_kmers"), bool).unwrap_or_else(|e| e.exit());
+    let canonical_kmers = matches.is_present("canonical_kmers");
     let masked = matches.is_present("masked");
 
     // create directory for output
@@ -120,7 +117,7 @@ fn main() {
     }
 
     // compute the 2-4mer kmer maps once only
-    let kmer_maps = kmer_maps::generate_kmer_maps();
+    let kmer_maps = kmer_maps::generate_kmer_maps(canonical_kmers);
 
     // channel for collecting output
     let (sender, receiver) = channel();
