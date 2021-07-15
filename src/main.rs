@@ -9,6 +9,7 @@ use std::sync::mpsc::channel;
 use bio::io::fasta;
 use clap::{value_t, App, Arg};
 use indicatif::{ProgressBar, ProgressStyle};
+use itertools::Itertools;
 use rayon::prelude::*;
 
 // internal imports
@@ -201,6 +202,7 @@ fn main() {
     // write files
     // I pass over &res four times here...
     // pretty inefficient.
+    // I should really separate these functions from main. It's just lazy.
 
     eprintln!("[+]\tWriting output to files");
     for i in &res {
@@ -228,44 +230,84 @@ fn main() {
     window_file.flush().unwrap();
 
     // these are the arrays, tab separated bed-like format.
-    for i in &res {
-        writeln!(
-            window_file_2,
-            "{}\t{}\t{}\t{}",
-            i.id,
-            i.start,
-            i.end,
-            kmer_maps::WriteArray(i.divalues.clone())
-        )
-        .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
+    // TODO: add headers for each of these
+    match kmer_maps.as_slice() {
+        [two, three, four] => {
+            // headers for dinucs
+            let mut dinuc_headers = Vec::new();
+            for key in two.map.keys().sorted() {
+                dinuc_headers.push(key)
+            }
+            writeln!(
+                window_file_2,
+                "id\tstart\tend\t{}",
+                kmer_maps::WriteKmerValues(dinuc_headers)
+            )
+            .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
+
+            for i in &res {
+                writeln!(
+                    window_file_2,
+                    "{}\t{}\t{}\t{}",
+                    i.id,
+                    i.start,
+                    i.end,
+                    kmer_maps::WriteArray(i.divalues.clone())
+                )
+                .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
+            }
+            window_file_2.flush().unwrap();
+
+            // headers for trinucs
+            let mut trinuc_headers = Vec::new();
+            for key in three.map.keys().sorted() {
+                trinuc_headers.push(key)
+            }
+            writeln!(
+                window_file_3,
+                "id\tstart\tend\t{}",
+                kmer_maps::WriteKmerValues(trinuc_headers)
+            )
+            .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
+            for i in &res {
+                writeln!(
+                    window_file_3,
+                    "{}\t{}\t{}\t{}",
+                    i.id,
+                    i.start,
+                    i.end,
+                    kmer_maps::WriteArray(i.trivalues.clone())
+                )
+                .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
+            }
+            window_file_3.flush().unwrap();
+            //
+            // headers for tetranucs
+            let mut tetranuc_headers = Vec::new();
+            for key in four.map.keys().sorted() {
+                tetranuc_headers.push(key)
+            }
+            writeln!(
+                window_file_4,
+                "id\tstart\tend\t{}",
+                kmer_maps::WriteKmerValues(tetranuc_headers)
+            )
+            .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
+            for i in &res {
+                writeln!(
+                    window_file_4,
+                    "{}\t{}\t{}\t{}",
+                    i.id,
+                    i.start,
+                    i.end,
+                    kmer_maps::WriteArray(i.tetravalues.clone())
+                )
+                .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
+            }
+            window_file_4.flush().unwrap();
+        }
+        [..] => {} // Needed to make the patterns exhaustive
     }
-    window_file_2.flush().unwrap();
-    //
-    for i in &res {
-        writeln!(
-            window_file_3,
-            "{}\t{}\t{}\t{}",
-            i.id,
-            i.start,
-            i.end,
-            kmer_maps::WriteArray(i.trivalues.clone())
-        )
-        .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
-    }
-    window_file_3.flush().unwrap();
-    //
-    for i in &res {
-        writeln!(
-            window_file_4,
-            "{}\t{}\t{}\t{}",
-            i.id,
-            i.start,
-            i.end,
-            kmer_maps::WriteArray(i.tetravalues.clone())
-        )
-        .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
-    }
-    window_file_4.flush().unwrap();
 
     eprintln!("[+]\tOutput written to directory: ./fw_out/{}", output);
 }

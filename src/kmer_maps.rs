@@ -87,7 +87,7 @@ pub mod kmer_maps {
         output
     }
 
-    // display for Vec<i32>
+    // hacky display for Vec<i32>
     #[derive(Clone)]
     pub struct WriteArray(pub Vec<i32>);
 
@@ -101,6 +101,25 @@ pub mod kmer_maps {
             }
 
             tab_separated.push_str(&self.0[self.0.len() - 1].to_string());
+            write!(f, "{}", tab_separated)
+        }
+    }
+    // hacky display for Vec<Vec<u8>>
+    // which is what the kmers are stored as for most of the time.
+    #[derive(Clone)]
+    pub struct WriteKmerValues<'a>(pub Vec<&'a Vec<u8>>);
+
+    impl<'a> Display for WriteKmerValues<'a> {
+        fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+            let mut tab_separated = String::new();
+
+            for kmer in &self.0[0..self.0.len() - 1] {
+                let kmer_str = std::str::from_utf8(kmer).unwrap();
+                tab_separated.push_str(kmer_str);
+                tab_separated.push_str("\t");
+            }
+
+            tab_separated.push_str(std::str::from_utf8(&self.0[self.0.len() - 1]).unwrap());
             write!(f, "{}", tab_separated)
         }
     }
