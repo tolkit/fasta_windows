@@ -240,7 +240,7 @@ fn main() {
             }
             writeln!(
                 window_file_2,
-                "id\tstart\tend\t{}",
+                "ID\tstart\tend\t{}",
                 kmer_maps::WriteKmerValues(dinuc_headers)
             )
             .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
@@ -265,7 +265,7 @@ fn main() {
             }
             writeln!(
                 window_file_3,
-                "id\tstart\tend\t{}",
+                "ID\tstart\tend\t{}",
                 kmer_maps::WriteKmerValues(trinuc_headers)
             )
             .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
@@ -289,7 +289,7 @@ fn main() {
             }
             writeln!(
                 window_file_4,
-                "id\tstart\tend\t{}",
+                "ID\tstart\tend\t{}",
                 kmer_maps::WriteKmerValues(tetranuc_headers)
             )
             .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));

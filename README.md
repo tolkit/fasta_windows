@@ -4,13 +4,14 @@ Fast statistics in windows over a genome in fasta format.
 - GC content
 - GC proportion
 - GC skew
-- Shannon entropy
 - Proportion of G's, C's, A's, T's, N's
+- Shannon entropy
 - Di/tri/tetranucleotide shannon diversity
+- Di/tri/tetranucleotide frequency arrays
 
 ## Usage
 
-Fewer options than previous versions, as di/tri/tetranucleotide diversity is calculated instead of user input for kmer length.
+The masked (-m) flag only affects the first four output options above - kmers are coerced to uppercase, and shannon entropy probably needs some attention on that.
 
 ```
 Fasta windows 0.2.1
@@ -21,17 +22,15 @@ USAGE:
     fasta_windows [FLAGS] [OPTIONS] --fasta <fasta> --output <output>
 
 FLAGS:
-    -h, --help       Prints help information
-    -m, --masked     Consider only uppercase nucleotides in the calculations.
-    -V, --version    Prints version information
+    -c, --canonical_kmers    Should the canonical kmers be calculated?
+    -h, --help               Prints help information
+    -m, --masked             Consider only uppercase nucleotides in the calculations.
+    -V, --version            Prints version information
 
 OPTIONS:
-    -c, --canonical_kmers <canonical_kmers>    Should the canonical kmers be calculated? Boolean, input true or false.
-                                               [default: false]
-    -f, --fasta <fasta>                        The input fasta file.
-    -o, --output <output>                      Output filename for the CSV (without extension).
-    -w, --window_size <window_size>            Integer size of window for statistics to be computed over. [default:
-                                               1000]
+    -f, --fasta <fasta>                The input fasta file.
+    -o, --output <output>              Output filename for the CSV (without extension).
+    -w, --window_size <window_size>    Integer size of window for statistics to be computed over. [default: 1000]
 ```
 
 ## Building
@@ -75,6 +74,7 @@ Also output (non-optional at the moment), are three more TSV's, which are the ar
 e.g. for dinucleotide frequencies:
 
 ```
+ID	start	end	AA	AC	AG	AT	CA	CC	CG	CT	GA	GC	GG	GT	TA	TC	TG	TT
 SUPER_1 0       1000    122     120     45      73      134     68      39      46      50      55      45      15      54      44 36       53
 SUPER_1 1000    2000    140     83      32      90      85      54      22      66      30      25      19      39      91      65 40       118
 SUPER_1 2000    3000    216     181     4       5       4       181     5       181     3       8       3       3       183     1  516
