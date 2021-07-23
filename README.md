@@ -1,6 +1,7 @@
 # fasta_windows
 
-Fast statistics in windows over a genome in fasta format.
+Written for Darwin Tree of Life chromosomal level genome assemblies. The executable takes a fasta formatted file and calculates some statistics of interest:
+
 - GC content
 - GC proportion
 - GC skew
@@ -11,10 +12,8 @@ Fast statistics in windows over a genome in fasta format.
 
 ## Usage
 
-The masked (-m) flag only affects the first four output options above - kmers are coerced to uppercase, and shannon entropy probably needs some attention on that.
-
 ```
-Fasta windows 0.2.1
+Fasta windows 0.2.2
 Max Brown <mb39@sanger.ac.uk>
 Quickly compute statistics over a fasta file in windows.
 
@@ -22,14 +21,14 @@ USAGE:
     fasta_windows [FLAGS] [OPTIONS] --fasta <fasta> --output <output>
 
 FLAGS:
-    -c, --canonical_kmers    Should the canonical kmers be calculated?
-    -h, --help               Prints help information
-    -m, --masked             Consider only uppercase nucleotides in the calculations.
-    -V, --version            Prints version information
+    -d, --description    Add an extra column to _windows.tsv output with fasta header descriptions.
+    -h, --help           Prints help information
+    -m, --masked         Consider only uppercase nucleotides in the calculations.
+    -V, --version        Prints version information
 
 OPTIONS:
     -f, --fasta <fasta>                The input fasta file.
-    -o, --output <output>              Output filename for the CSV (without extension).
+    -o, --output <output>              Output filename for the TSV's (without extension).
     -w, --window_size <window_size>    Integer size of window for statistics to be computed over. [default: 1000]
 ```
 
@@ -48,11 +47,7 @@ cargo build --release
 
 The default window size is 1kb.
 
-## Output & benchmarks
-
-The only annoying overhead at the moment is sequence counting for the progress bar, which must be computed before the progress bar is initiated.
-
-### Output
+## Output
 
 Output is now a tsv with bed-like format in the first three columns:
 
@@ -87,6 +82,10 @@ SUPER_1 8000    9000    114     67      43      68      63      86      52      
 SUPER_1 9000    10000   97      97      44      63      72      95      50      67      46      44      33      46      85      49 42       69
 ```
 
-### Updates & bugs
+### Comments, updates & bugs
+
+As of version 0.2.2, I've removed canonical kmers as an option; it was really computationally expensive and I couldn't think of a way to efficienty add it in. End users that wish this are pointed in the direction of <a href="https://github.com/tolkit/fw_group">fw_group</a>, which will at some point soon provide this functionality.
+
+The masked (-m) flag only affects GC content, GC proportion, GC skew, proportion of G's, C's, A's, T's, N's. Kmers are coerced to uppercase automatically. Shannon index counts only uppercase nucleotides.
 
 Please use, test, and let me know if there are any bugs or features you want implemented. Either raise an issue, or email me (see email in usage).

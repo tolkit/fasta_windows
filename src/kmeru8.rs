@@ -27,10 +27,13 @@ pub mod kmeru8 {
     // and only the lexicographically 'smaller' kmer is stored in the map.
     // I think this should still work given the restructure? check...
 
+    // needs restructuring, so canonicalisation occurs after the map has been made.
+    // NOTE: canonical is currently hardcoded as fasle
+
     pub fn kmer_diversity(
         dna: &[u8],
         kmer_maps: Vec<KmerMap>,
-        canonical: bool,
+        // canonical: bool,
     ) -> ShannonDiversity {
         // parallel iterate over 2-4mers
         let (sender, receiver) = channel();
@@ -45,27 +48,12 @@ pub mod kmeru8 {
                 // kmer to upper
                 // unfortunately this creates a copy
                 // but in place manipulation seems difficult, because rust.
-                let mut kmer_upper = kmer.to_ascii_uppercase();
-                // canonical is really slow compared to non-canonical.
-                if canonical {
-                    // switch to lexicographically lower kmer
-                    let rev_kmer = reverse_complement(&kmer_upper);
-                    if rev_kmer < kmer_upper {
-                        kmer_upper = rev_kmer;
-                    }
-                    // skip where kmer contains an N (or any other invalid characters?)
-                    if kmer_upper.contains(&b'N') {
-                        continue;
-                    }
-                    let count = map.entry(kmer_upper).or_insert(0);
-                    *count += 1;
-                } else {
-                    if kmer_upper.contains(&b'N') {
-                        continue;
-                    }
-                    let count = map.entry(kmer_upper).or_insert(0);
-                    *count += 1;
+                let kmer_upper = kmer.to_ascii_uppercase();
+                if kmer_upper.contains(&b'N') {
+                    continue;
                 }
+                let count = map.entry(kmer_upper).or_insert(0);
+                *count += 1;
             }
             // now calculate shannon diversity
             let shannon = shannon_diversity(map.values().cloned().collect());

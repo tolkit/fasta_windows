@@ -56,15 +56,24 @@ pub mod seq_statsu8 {
             c_counts = counts.get(&67).unwrap_or(&0) + counts.get(&99).unwrap_or(&0); // 67 == C; 99 == c
             a_counts = counts.get(&65).unwrap_or(&0) + counts.get(&97).unwrap_or(&0); // 65 == A; 97 == a
             t_counts = counts.get(&84).unwrap_or(&0) + counts.get(&116).unwrap_or(&0); // 84 == T; 116 == t
-            n_counts = counts.get(&78).unwrap_or(&0) + counts.get(&110).unwrap_or(&0); // 78 == N; 110 == n
+            n_counts = counts.get(&78).unwrap_or(&0) + counts.get(&110).unwrap_or(&0);
+            // 78 == N; 110 == n
         }
 
         // shannon entropy of the window
         // see https://github.com/fkie-cad/entropython/blob/main/src/lib.rs
-        // TODO: will this be higher if lower/uppercases are not synonymised?
+
         let mut byte_count = [0u64; 256];
         for byte in dna {
-            byte_count[*byte as usize] += 1;
+            // change lowercase nucleotides to uppercase ones.
+            match byte {
+                103u8 => byte_count[71u8 as usize] += 1,
+                99u8 => byte_count[67u8 as usize] += 1,
+                97u8 => byte_count[65u8 as usize] += 1,
+                116u8 => byte_count[84u8 as usize] += 1,
+                110u8 => byte_count[78u8 as usize] += 1,
+                _ => byte_count[*byte as usize] += 1,
+            }
         }
         let mut entropy = 0f64;
         for counted_num in byte_count.iter().filter(|num| **num > 0u64) {
