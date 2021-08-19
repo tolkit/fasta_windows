@@ -1,6 +1,6 @@
 # fasta_windows
 
-Written for Darwin Tree of Life chromosomal level genome assemblies. The executable takes a fasta formatted file and calculates some statistics of interest:
+Written for Darwin Tree of Life chromosomal level genome assemblies. The executable takes a fasta formatted file and calculates some statistics of interest in windows:
 
 - GC content
 - GC proportion
@@ -9,6 +9,8 @@ Written for Darwin Tree of Life chromosomal level genome assemblies. The executa
 - Shannon entropy
 - Di/tri/tetranucleotide shannon diversity
 - Di/tri/tetranucleotide frequency arrays
+
+Output files can be visualised using <a href="https://github.com/tolkit/fw_plot">fw_plot</a> or grouped using <a href="https://github.com/tolkit/fw_group">fw_group</a>
 
 ## Usage
 

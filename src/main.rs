@@ -1,5 +1,6 @@
-// external imports
-// std
+// Max Brown 2021; Wellcome Sanger Institute
+
+// std imports
 use std::fs::{create_dir_all, File};
 use std::io::BufWriter;
 
