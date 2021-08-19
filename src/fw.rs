@@ -70,8 +70,10 @@ pub mod fw {
                 let fasta_record = record.expect("[-]\tError during fasta record parsing.");
 
                 // for the stats at the end.
-                // initiate a counter for the windows
-                let mut counter = window_size;
+                // initiate counters for the windows
+                let mut start = 0;
+                let mut end = window_size;
+
                 // begin sliding windows
                 let windows = fasta_record.seq().chunks(window_size);
 
@@ -90,8 +92,8 @@ pub mod fw {
                     s.send(Entry {
                         id: fasta_record.id().to_string(),
                         desc,
-                        start: counter - window_size,
-                        end: counter,
+                        start,
+                        end,
                         gc_proportion: seq_stats.gc_proportion,
                         gc_skew: seq_stats.gc_skew,
                         shannon_entropy: seq_stats.shannon_entropy,
@@ -110,10 +112,19 @@ pub mod fw {
                     .unwrap();
 
                     // re-set the counter if counter > length of current sequence
-                    if counter < fasta_record.seq().len() {
-                        counter += window_size
+
+                    if end < fasta_record.seq().len() {
+                        start += window_size;
+                        end += window_size;
+
+                        // now check if end overshoots the actual sequence length
+                        // issue #8
+                        if end > fasta_record.seq().len() {
+                            end = fasta_record.seq().len()
+                        }
                     } else {
-                        counter = 0
+                        start = 0;
+                        end = window_size;
                     }
                 }
                 progress_bar.inc(1);
