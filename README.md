@@ -18,7 +18,7 @@ Output files can be visualised using <a href="https://github.com/tolkit/fw_plot"
 
 ## Download
 
-The easiest way to get `fasta_windows` is through <b><a href="https://anaconda.org/bioconda/fasta_windows">conda/bioconda</a></>.
+The easiest way to get `fasta_windows` is through <b><a href="https://anaconda.org/bioconda/fasta_windows">conda/bioconda</a></b>.
 
 ```bash
 conda create -n fasta_windows -c bioconda fasta_windows
