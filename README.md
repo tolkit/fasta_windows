@@ -1,5 +1,9 @@
 # fasta_windows
 
+<p align="center">
+    <img width="300" height="132" src="https://www.darwintreeoflife.org/wp-content/themes/dtol/dist/assets/gfx/dtol-logo-round.png">
+</p>
+
 Written for Darwin Tree of Life chromosomal level genome assemblies. The executable takes a fasta formatted file and calculates some statistics of interest in windows:
 
 - GC content
@@ -11,6 +15,14 @@ Written for Darwin Tree of Life chromosomal level genome assemblies. The executa
 - Di/tri/tetranucleotide frequency arrays
 
 Output files can be visualised using <a href="https://github.com/tolkit/fw_plot">fw_plot</a> or grouped using <a href="https://github.com/tolkit/fw_group">fw_group</a>
+
+## Download
+
+The easiest way to get `fasta_windows` is through <b><a href="https://anaconda.org/bioconda/fasta_windows">conda/bioconda</a></>.
+
+```bash
+conda create -n fasta_windows -c bioconda fasta_windows
+```
 
 ## Usage
 
