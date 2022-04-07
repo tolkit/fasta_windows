@@ -2,156 +2,150 @@ use itertools::Itertools;
 use std::io::prelude::*;
 use std::{fs::File, io::BufWriter};
 
-use crate::kmer_maps::kmer_maps::{KmerMap, WriteArray, WriteKmerValues};
+use crate::kmer_maps::{self, KmerMap, WriteArray, WriteKmerValues};
+use crate::kmeru8;
+use crate::seq_statsu8;
 
-pub mod fw {
+use bio::io::fasta;
+use indicatif::{ProgressBar, ProgressStyle};
+use rayon::prelude::*;
+use std::sync::mpsc::channel;
 
-    use crate::kmer_maps::kmer_maps;
-    use crate::kmeru8::kmeru8;
-    use crate::seq_statsu8::seq_statsu8;
+pub fn fasta_windows(
+    matches: &clap::ArgMatches,
+    mut window_file: BufWriter<File>,
+    mut window_file_2: BufWriter<File>,
+    mut window_file_3: BufWriter<File>,
+    mut window_file_4: BufWriter<File>,
+) -> std::io::Result<()> {
+    // get matches
+    let input_fasta = matches.value_of("fasta").unwrap();
+    let output = matches.value_of("output").unwrap();
+    let window_size: usize = matches.value_of_t("window_size").unwrap();
+    let masked = matches.is_present("masked");
+    let description = matches.is_present("description");
 
-    use bio::io::fasta;
-    use clap::value_t;
-    use indicatif::{ProgressBar, ProgressStyle};
-    use rayon::prelude::*;
-    use std::fs::File;
-    use std::io::BufWriter;
-    use std::sync::mpsc::channel;
+    // compute the 2-4mer kmer maps once only
+    // hard code with false until I decide how to deal with
+    // canonical kmers
+    let kmer_maps = kmer_maps::generate_kmer_maps(false);
 
-    use super::{Entry, Output};
+    // channel for collecting output
+    let (sender, receiver) = channel();
 
-    pub fn fasta_windows(
-        matches: &clap::ArgMatches,
-        mut window_file: BufWriter<File>,
-        mut window_file_2: BufWriter<File>,
-        mut window_file_3: BufWriter<File>,
-        mut window_file_4: BufWriter<File>,
-    ) -> std::io::Result<()> {
-        // get matches
-        let input_fasta = matches.value_of("fasta").unwrap();
-        let output = matches.value_of("output").unwrap();
-        let window_size =
-            value_t!(matches.value_of("window_size"), usize).unwrap_or_else(|e| e.exit());
-        let masked = matches.is_present("masked");
-        let description = matches.is_present("description");
-
-        // compute the 2-4mer kmer maps once only
-        // hard code with false until I decide how to deal with
-        // canonical kmers
-        let kmer_maps = kmer_maps::generate_kmer_maps(false);
-
-        // channel for collecting output
-        let (sender, receiver) = channel();
-
-        // iterate over fasta to get number of sequences
-        // for the progress bar
-        let mut nb_reads = 0;
-        // read in the fasta from file
-        let mut reader = fasta::Reader::from_file(input_fasta)
-            .expect("[-]\tPath invalid.")
-            .records();
-        while let Some(Ok(_record)) = reader.next() {
-            nb_reads += 1;
-        }
-
-        let progress_bar = ProgressBar::new(nb_reads);
-        let pb_style = ProgressStyle::default_bar()
-            .template("[+]\tProcessing records: {bar:40.cyan/blue} {pos:>7}/{len:12}")
-            .progress_chars(">>-");
-        progress_bar.set_style(pb_style);
-
-        // second reader for the computation
-        eprintln!("[+]\tReading fasta from file");
-        let reader = fasta::Reader::from_file(input_fasta).expect("[-]\tPath invalid.");
-        reader
-            .records()
-            .par_bridge()
-            .for_each_with(sender, |s, record| {
-                let fasta_record = record.expect("[-]\tError during fasta record parsing.");
-
-                // for the stats at the end.
-                // initiate counters for the windows
-                let mut start = 0;
-                let mut end = window_size;
-
-                // begin sliding windows
-                let windows = fasta_record.seq().chunks(window_size);
-
-                for win in windows {
-                    let seq_stats = seq_statsu8::seq_stats(win, masked);
-
-                    // unpack values
-                    let kmer_stats = kmeru8::kmer_diversity(win, kmer_maps.clone());
-
-                    // get description if present
-                    let desc = match fasta_record.desc() {
-                        Some(d) => d.to_string(),
-                        None => "No description.".to_string(),
-                    };
-
-                    s.send(Entry {
-                        id: fasta_record.id().to_string(),
-                        desc,
-                        start,
-                        end,
-                        gc_proportion: seq_stats.gc_proportion,
-                        gc_skew: seq_stats.gc_skew,
-                        shannon_entropy: seq_stats.shannon_entropy,
-                        g_s: seq_stats.g_s,
-                        c_s: seq_stats.c_s,
-                        a_s: seq_stats.a_s,
-                        t_s: seq_stats.t_s,
-                        n_s: seq_stats.n_s,
-                        dinucleotides: kmer_stats.dinucleotides,
-                        trinucleotides: kmer_stats.trinucleotides,
-                        tetranucleotides: kmer_stats.tetranucleotides,
-                        divalues: kmer_stats.di_freq,
-                        trivalues: kmer_stats.tri_freq,
-                        tetravalues: kmer_stats.tetra_freq,
-                    })
-                    .unwrap();
-
-                    // re-set the counter if counter > length of current sequence
-
-                    if end < fasta_record.seq().len() {
-                        start += window_size;
-                        end += window_size;
-
-                        // now check if end overshoots the actual sequence length
-                        // issue #8
-                        if end > fasta_record.seq().len() {
-                            end = fasta_record.seq().len()
-                        }
-                    } else {
-                        start = 0;
-                        end = window_size;
-                    }
-                }
-                progress_bar.inc(1);
-            });
-        progress_bar.finish();
-        let mut entries: Vec<Entry> = receiver.iter().collect();
-        // parallel iteration messes up the order of scaffold ID's, so we fix that here.
-        // however, within ID's windows should be ordered.
-        entries.sort_by_key(|x| x.id.clone());
-
-        let mut entry_writer = Output(entries);
-
-        eprintln!("[+]\tWriting output to files");
-
-        entry_writer.write_windows(&mut window_file, description)?;
-        entry_writer.write_kmers(
-            &mut window_file_2,
-            &mut window_file_3,
-            &mut window_file_4,
-            kmer_maps,
-            description,
-        )?;
-
-        eprintln!("[+]\tOutput written to directory: ./fw_out/{}", output);
-
-        Ok(())
+    // iterate over fasta to get number of sequences
+    // for the progress bar
+    let mut nb_reads = 0;
+    // read in the fasta from file
+    let mut reader = fasta::Reader::from_file(input_fasta)
+        .expect("[-]\tPath invalid.")
+        .records();
+    while let Some(Ok(_record)) = reader.next() {
+        nb_reads += 1;
     }
+
+    let progress_bar = ProgressBar::new(nb_reads);
+    let pb_style = ProgressStyle::default_bar()
+        .template("[+]\tProcessing records: {bar:40.cyan/blue} {pos:>7}/{len:12}")
+        .progress_chars(">>-");
+    progress_bar.set_style(pb_style);
+
+    // second reader for the computation
+    eprintln!("[+]\tReading fasta from file");
+    let reader = fasta::Reader::from_file(input_fasta).expect("[-]\tPath invalid.");
+    reader
+        .records()
+        .par_bridge()
+        .for_each_with(sender, |s, record| {
+            let fasta_record = record.expect("[-]\tError during fasta record parsing.");
+
+            // for the stats at the end.
+            // initiate counters for the windows
+            let mut start = 0;
+            // https://github.com/tolkit/fasta_windows/issues/9
+            // if the record length < window size, set end to the
+            let mut end = match fasta_record.seq().len() < window_size {
+                true => fasta_record.seq().len(),
+                false => window_size,
+            };
+
+            // begin sliding windows
+            let windows = fasta_record.seq().chunks(window_size);
+
+            for win in windows {
+                let seq_stats = seq_statsu8::seq_stats(win, masked);
+
+                // unpack values
+                let kmer_stats = kmeru8::kmer_diversity(win, kmer_maps.clone());
+
+                // get description if present
+                let desc = match fasta_record.desc() {
+                    Some(d) => d.to_string(),
+                    None => "No description.".to_string(),
+                };
+
+                s.send(Entry {
+                    id: fasta_record.id().to_string(),
+                    desc,
+                    start,
+                    end,
+                    gc_proportion: seq_stats.gc_proportion,
+                    gc_skew: seq_stats.gc_skew,
+                    shannon_entropy: seq_stats.shannon_entropy,
+                    g_s: seq_stats.g_s,
+                    c_s: seq_stats.c_s,
+                    a_s: seq_stats.a_s,
+                    t_s: seq_stats.t_s,
+                    n_s: seq_stats.n_s,
+                    dinucleotides: kmer_stats.dinucleotides,
+                    trinucleotides: kmer_stats.trinucleotides,
+                    tetranucleotides: kmer_stats.tetranucleotides,
+                    divalues: kmer_stats.di_freq,
+                    trivalues: kmer_stats.tri_freq,
+                    tetravalues: kmer_stats.tetra_freq,
+                })
+                .unwrap();
+
+                // re-set the counter if counter > length of current sequence
+
+                if end < fasta_record.seq().len() {
+                    start += window_size;
+                    end += window_size;
+
+                    // now check if end overshoots the actual sequence length
+                    // issue #8
+                    if end > fasta_record.seq().len() {
+                        end = fasta_record.seq().len()
+                    }
+                } else {
+                    start = 0;
+                    end = window_size;
+                }
+            }
+            progress_bar.inc(1);
+        });
+    progress_bar.finish();
+    let mut entries: Vec<Entry> = receiver.iter().collect();
+    // parallel iteration messes up the order of scaffold ID's, so we fix that here.
+    // however, within ID's windows should be ordered.
+    entries.sort_by_key(|x| x.id.clone());
+
+    let mut entry_writer = Output(entries);
+
+    eprintln!("[+]\tWriting output to files");
+
+    entry_writer.write_windows(&mut window_file, description)?;
+    entry_writer.write_kmers(
+        &mut window_file_2,
+        &mut window_file_3,
+        &mut window_file_4,
+        kmer_maps,
+        description,
+    )?;
+
+    eprintln!("[+]\tOutput written to directory: ./fw_out/{}", output);
+
+    Ok(())
 }
 
 // the output struct

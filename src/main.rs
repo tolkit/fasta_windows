@@ -1,54 +1,55 @@
-// Max Brown 2021; Wellcome Sanger Institute
+// Max Brown 2022; Wellcome Sanger Institute
 
 // std imports
 use std::fs::{create_dir_all, File};
 use std::io::BufWriter;
 
 // non-std
-use clap::{App, Arg};
+use clap::{Arg, Command};
 
 // internal imports
-use fasta_windows::fw::fw::fasta_windows;
+use fasta_windows::fw::fasta_windows;
 
 fn main() -> std::io::Result<()> {
     // command line options
-    let matches = App::new("Fasta windows")
+    let matches = Command::new("Fasta windows")
         .version(clap::crate_version!())
+        .arg_required_else_help(true)
         .author("Max Brown <mb39@sanger.ac.uk>")
         .about("Quickly compute statistics over a fasta file in windows.")
         .arg(
-            Arg::with_name("fasta")
-                .short("f")
+            Arg::new("fasta")
+                .short('f')
                 .long("fasta")
                 .takes_value(true)
                 .required(true)
                 .help("The input fasta file."),
         )
         .arg(
-            Arg::with_name("window_size")
-                .short("w")
+            Arg::new("window_size")
+                .short('w')
                 .long("window_size")
                 .help("Integer size of window for statistics to be computed over.")
                 .takes_value(true)
                 .default_value("1000"),
         )
         .arg(
-            Arg::with_name("description")
-                .short("d")
+            Arg::new("description")
+                .short('d')
                 .long("description")
                 .help("Add an extra column to _windows.tsv output with fasta header descriptions."),
         )
         .arg(
-            Arg::with_name("output")
-                .short("o")
+            Arg::new("output")
+                .short('o')
                 .long("output")
                 .help("Output filename for the TSV's (without extension).")
                 .takes_value(true)
                 .required(true),
         )
         .arg(
-            Arg::with_name("masked")
-                .short("m")
+            Arg::new("masked")
+                .short('m')
                 .long("masked")
                 .help("Consider only uppercase nucleotides in the calculations."),
         )

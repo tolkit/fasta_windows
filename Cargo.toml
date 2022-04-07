@@ -1,12 +1,12 @@
 [package]
 name = "fasta_windows"
-version = "0.2.2"
+version = "0.2.3"
 authors = ["Max Brown <mb39@sanger.ac.uk>"]
 edition = "2018"
 
 [dependencies]
 bio = "*"
-clap = "~2.27.0"
+clap = {version = "3.1.8", features = ["cargo"]}
 rayon = "1.5.0"
 indicatif = "*"
 itertools = "0.10.1"
