@@ -2,7 +2,14 @@
 name = "fasta_windows"
 version = "0.2.3"
 authors = ["Max Brown <mb39@sanger.ac.uk>"]
-edition = "2018"
+edition = "2021"
+license = "MIT"
+description = "Make quick statistics in windows from a fasta file."
+homepage = "https://github.com/tolkit/fasta_windows"
+repository = "https://github.com/tolkit/fasta_windows"
+documentation = "https://github.com/tolkit/fasta_windows"
+keywords = ["fasta", "windows", "genomics"]
+categories = ["command-line-utilities", "science"]
 
 [dependencies]
 bio = "*"
