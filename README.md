@@ -14,7 +14,7 @@ Written for Darwin Tree of Life chromosomal level genome assemblies. The executa
 - Di/tri/tetranucleotide shannon diversity
 - Di/tri/tetranucleotide frequency arrays
 
-Output files can be visualised using <a href="https://github.com/tolkit/fw_plot">fw_plot</a> or grouped using <a href="https://github.com/tolkit/fw_group">fw_group</a>
+Output files can be visualised using <a href="https://github.com/tolkit/fw_plot">fw_plot</a> or grouped using <a href="https://github.com/tolkit/fw_group">fw_group</a>.
 
 ## Download
 
@@ -27,7 +27,7 @@ conda create -n fasta_windows -c bioconda fasta_windows
 ## Usage
 
 ```
-Fasta windows 0.2.2
+Fasta windows 0.2.3
 Max Brown <mb39@sanger.ac.uk>
 Quickly compute statistics over a fasta file in windows.
 

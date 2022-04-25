@@ -70,6 +70,7 @@ pub fn fasta_windows(
             };
 
             // begin sliding windows
+            // consider changing this to chunks_exact?
             let windows = fasta_record.seq().chunks(window_size);
 
             for win in windows {
