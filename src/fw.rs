@@ -101,6 +101,7 @@ pub fn fasta_windows(
                     a_s: seq_stats.a_s,
                     t_s: seq_stats.t_s,
                     n_s: seq_stats.n_s,
+                    cpg_s: ((*kmer_stats.di_freq.get(6).unwrap_or(&0) as f32) / seq_stats.len),
                     dinucleotides: kmer_stats.dinucleotides,
                     trinucleotides: kmer_stats.trinucleotides,
                     tetranucleotides: kmer_stats.tetranucleotides,
@@ -169,6 +170,7 @@ pub struct Entry {
     pub a_s: f32,
     pub t_s: f32,
     pub n_s: f32,
+    pub cpg_s: f32,
     pub dinucleotides: f64,
     pub trinucleotides: f64,
     pub tetranucleotides: f64,
@@ -189,8 +191,8 @@ impl Output {
         let header;
 
         match description {
-            true => header = "ID\tdescription\tstart\tend\tGC_prop\tGC_skew\tAT_skew\tShannon_entropy\tProp_Gs\tProp_Cs\tProp_As\tProp_Ts\tProp_Ns\tDinucleotide_Shannon\tTrinucleotide_Shannon\tTetranucleotide_Shannon".to_string(),
-            false => header = "ID\tstart\tend\tGC_prop\tGC_skew\tAT_skew\tShannon_entropy\tProp_Gs\tProp_Cs\tProp_As\tProp_Ts\tProp_Ns\tDinucleotide_Shannon\tTrinucleotide_Shannon\tTetranucleotide_Shannon".to_string()
+            true => header = "ID\tdescription\tstart\tend\tGC_prop\tGC_skew\tAT_skew\tShannon_entropy\tProp_Gs\tProp_Cs\tProp_As\tProp_Ts\tProp_Ns\tCpG_prop\tDinucleotide_Shannon\tTrinucleotide_Shannon\tTetranucleotide_Shannon".to_string(),
+            false => header = "ID\tstart\tend\tGC_prop\tGC_skew\tAT_skew\tShannon_entropy\tProp_Gs\tProp_Cs\tProp_As\tProp_Ts\tProp_Ns\tCpG_prop\tDinucleotide_Shannon\tTrinucleotide_Shannon\tTetranucleotide_Shannon".to_string()
         }
 
         writeln!(file, "{}", header)
@@ -203,7 +205,7 @@ impl Output {
             };
             writeln!(
                 file,
-                "{}\t{}{}\t{}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}",
+                "{}\t{}{}\t{}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}",
                 i.id,
                 desc,
                 i.start,
@@ -217,6 +219,7 @@ impl Output {
                 i.a_s,
                 i.t_s,
                 i.n_s,
+                i.cpg_s,
                 i.dinucleotides,
                 i.trinucleotides,
                 i.tetranucleotides,

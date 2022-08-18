@@ -12,6 +12,7 @@ pub struct SeqStats {
     pub a_s: f32,
     pub t_s: f32,
     pub n_s: f32,
+    pub len: f32,
 }
 // function below reveals other ambiguous bases present in assemblies, not sure
 // how to deal with those yet.
@@ -89,6 +90,7 @@ pub fn seq_stats(dna: &[u8], masked: bool) -> SeqStats {
         a_s: ((a_counts) as f32 / length),
         t_s: ((t_counts) as f32 / length),
         n_s: ((n_counts) as f32 / length),
+        len: length,
     }
 }
 
