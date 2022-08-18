@@ -249,7 +249,7 @@ impl Output {
                 }
 
                 // headers for mononucs
-                writeln!(file1, "{}A\tC\tG\tT", header)
+                writeln!(file1, "{}A\tC\tG\tT\tN", header)
                     .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
                 // headers for dinucs
                 let mut dinuc_headers = Vec::new();
