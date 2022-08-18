@@ -294,7 +294,7 @@ impl Output {
                 for i in &self.0 {
                     let desc = match description {
                         true => format!("{}\t", i.desc),
-                        false => format!("\t"),
+                        false => format!(""),
                     };
                     writeln!(
                         file1,
