@@ -92,6 +92,7 @@ pub fn fasta_windows(
                     end,
                     gc_proportion: seq_stats.gc_proportion,
                     gc_skew: seq_stats.gc_skew,
+                    at_skew: seq_stats.at_skew,
                     shannon_entropy: seq_stats.shannon_entropy,
                     g_s: seq_stats.g_s,
                     c_s: seq_stats.c_s,
@@ -157,6 +158,7 @@ pub struct Entry {
     pub end: usize,
     pub gc_proportion: f32,
     pub gc_skew: f32,
+    pub at_skew: f32,
     pub shannon_entropy: f64,
     pub g_s: f32,
     pub c_s: f32,
@@ -183,8 +185,8 @@ impl Output {
         let header;
 
         match description {
-            true => header = "ID\tdescription\tstart\tend\tGC_prop\tGC_skew\tShannon_entropy\tProp_Gs\tProp_Cs\tProp_As\tProp_Ts\tProp_Ns\tDinucleotide_Shannon\tTrinucleotide_Shannon\tTetranucleotide_Shannon".to_string(),
-            false => header = "ID\tstart\tend\tGC_prop\tGC_skew\tShannon_entropy\tProp_Gs\tProp_Cs\tProp_As\tProp_Ts\tProp_Ns\tDinucleotide_Shannon\tTrinucleotide_Shannon\tTetranucleotide_Shannon".to_string()
+            true => header = "ID\tdescription\tstart\tend\tGC_prop\tGC_skew\tAT_skew\tShannon_entropy\tProp_Gs\tProp_Cs\tProp_As\tProp_Ts\tProp_Ns\tDinucleotide_Shannon\tTrinucleotide_Shannon\tTetranucleotide_Shannon".to_string(),
+            false => header = "ID\tstart\tend\tGC_prop\tGC_skew\tAT_skew\tShannon_entropy\tProp_Gs\tProp_Cs\tProp_As\tProp_Ts\tProp_Ns\tDinucleotide_Shannon\tTrinucleotide_Shannon\tTetranucleotide_Shannon".to_string()
         }
 
         writeln!(file, "{}", header)
@@ -195,13 +197,14 @@ impl Output {
                 for i in &self.0 {
                     writeln!(
                         file,
-                        "{}\t{}\t{}\t{}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}",
+                        "{}\t{}\t{}\t{}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}",
                         i.id,
                         i.desc,
                         i.start,
                         i.end,
                         i.gc_proportion,
                         i.gc_skew,
+                        i.at_skew,
                         i.shannon_entropy,
                         i.g_s,
                         i.c_s,
@@ -220,12 +223,13 @@ impl Output {
                 for i in &self.0 {
                     writeln!(
                         file,
-                        "{}\t{}\t{}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}",
+                        "{}\t{}\t{}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}",
                         i.id,
                         i.start,
                         i.end,
                         i.gc_proportion,
                         i.gc_skew,
+                        i.at_skew,
                         i.shannon_entropy,
                         i.g_s,
                         i.c_s,

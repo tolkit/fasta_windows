@@ -3,6 +3,7 @@ use std::collections::HashMap;
 pub struct SeqStats {
     pub gc_proportion: f32,
     pub gc_skew: f32,
+    pub at_skew: f32,
     pub shannon_entropy: f64,
     // proportions of nucleotides (& N's)
     pub g_s: f32,
@@ -79,6 +80,7 @@ pub fn seq_stats(dna: &[u8], masked: bool) -> SeqStats {
         gc_proportion: ((g_counts + c_counts) as f32
             / (g_counts + c_counts + a_counts + t_counts) as f32),
         gc_skew: (g_counts - c_counts) as f32 / (g_counts + c_counts) as f32,
+        at_skew: (a_counts - t_counts) as f32 / (a_counts + t_counts) as f32,
         shannon_entropy: entropy,
         g_s: ((g_counts) as f32 / length),
         c_s: ((c_counts) as f32 / length),

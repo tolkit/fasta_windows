@@ -8,7 +8,7 @@ Written for Darwin Tree of Life chromosomal level genome assemblies. The executa
 
 - GC content
 - GC proportion
-- GC skew
+- GC and AT skew
 - Proportion of G's, C's, A's, T's, N's
 - Shannon entropy
 - Di/tri/tetranucleotide shannon diversity
@@ -100,6 +100,6 @@ SUPER_1 9000    10000   97      97      44      63      72      95      50      
 
 As of version 0.2.2, I've removed canonical kmers as an option; it was really computationally expensive and I couldn't think of a way to efficienty add it in. End users that wish this are pointed in the direction of <a href="https://github.com/tolkit/fw_group">fw_group</a>, which will at some point soon provide this functionality.
 
-The masked (-m) flag only affects GC content, GC proportion, GC skew, proportion of G's, C's, A's, T's, N's. Kmers are coerced to uppercase automatically. Shannon index counts only uppercase nucleotides.
+The masked (-m) flag only affects GC content, GC proportion, GC and AT skew, proportion of G's, C's, A's, T's, N's. Kmers are coerced to uppercase automatically. Shannon index counts only uppercase nucleotides.
 
 Please use, test, and let me know if there are any bugs or features you want implemented. Either raise an issue, or email me (see email in usage).
