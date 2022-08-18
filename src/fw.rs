@@ -192,59 +192,34 @@ impl Output {
         writeln!(file, "{}", header)
             .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
 
-        match description {
-            true => {
-                for i in &self.0 {
-                    writeln!(
-                        file,
-                        "{}\t{}\t{}\t{}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}",
-                        i.id,
-                        i.desc,
-                        i.start,
-                        i.end,
-                        i.gc_proportion,
-                        i.gc_skew,
-                        i.at_skew,
-                        i.shannon_entropy,
-                        i.g_s,
-                        i.c_s,
-                        i.a_s,
-                        i.t_s,
-                        i.n_s,
-                        i.dinucleotides,
-                        i.trinucleotides,
-                        i.tetranucleotides,
-                    )
-                    .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
-                }
-                file.flush().unwrap();
-            }
-            false => {
-                for i in &self.0 {
-                    writeln!(
-                        file,
-                        "{}\t{}\t{}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}",
-                        i.id,
-                        i.start,
-                        i.end,
-                        i.gc_proportion,
-                        i.gc_skew,
-                        i.at_skew,
-                        i.shannon_entropy,
-                        i.g_s,
-                        i.c_s,
-                        i.a_s,
-                        i.t_s,
-                        i.n_s,
-                        i.dinucleotides,
-                        i.trinucleotides,
-                        i.tetranucleotides,
-                    )
-                    .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
-                }
-                file.flush().unwrap();
-            }
+        for i in &self.0 {
+            let desc = match description {
+                true => format!("{}\t", i.desc),
+                false => format!(""),
+            };
+            writeln!(
+                file,
+                "{}\t{}{}\t{}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}",
+                i.id,
+                desc,
+                i.start,
+                i.end,
+                i.gc_proportion,
+                i.gc_skew,
+                i.at_skew,
+                i.shannon_entropy,
+                i.g_s,
+                i.c_s,
+                i.a_s,
+                i.t_s,
+                i.n_s,
+                i.dinucleotides,
+                i.trinucleotides,
+                i.tetranucleotides,
+            )
+            .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
         }
+        file.flush().unwrap();
 
         Ok(())
     }
