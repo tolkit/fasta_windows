@@ -13,7 +13,7 @@ use std::sync::mpsc::channel;
 
 pub fn fasta_windows(
     matches: &clap::ArgMatches,
-    mut window_file: BufWriter<File>,
+    mut window_file_0: BufWriter<File>,
     mut window_file_2: BufWriter<File>,
     mut window_file_3: BufWriter<File>,
     mut window_file_4: BufWriter<File>,
@@ -136,7 +136,7 @@ pub fn fasta_windows(
 
     eprintln!("[+]\tWriting output to files");
 
-    entry_writer.write_windows(&mut window_file, description)?;
+    entry_writer.write_windows(&mut window_file_0, description)?;
     entry_writer.write_kmers(
         &mut window_file_2,
         &mut window_file_3,
@@ -226,9 +226,9 @@ impl Output {
 
     pub fn write_kmers(
         &mut self,
-        file1: &mut BufWriter<File>,
         file2: &mut BufWriter<File>,
         file3: &mut BufWriter<File>,
+        file4: &mut BufWriter<File>,
         kmer_maps: Vec<KmerMap>,
         description: bool,
     ) -> std::io::Result<()> {
@@ -236,34 +236,33 @@ impl Output {
         // unpack kmer_maps
         match kmer_maps.as_slice() {
             [two, three, four] => {
-                // headers for dinucs
-                let mut dinuc_headers = Vec::new();
+                // headers for all
                 let header: String;
-
                 match description {
                     true => header = "ID\tdescription\tstart\tend\t".to_string(),
                     false => header = "ID\tstart\tend\t".to_string(),
                 }
 
                 // headers for dinucs
+                let mut dinuc_headers = Vec::new();
                 for key in two.map.keys().sorted() {
                     dinuc_headers.push(key)
                 }
-                writeln!(file1, "{}{}", header, WriteKmerValues(dinuc_headers))
+                writeln!(file2, "{}{}", header, WriteKmerValues(dinuc_headers))
                     .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
                 // headers for trinucs
                 let mut trinuc_headers = Vec::new();
                 for key in three.map.keys().sorted() {
                     trinuc_headers.push(key)
                 }
-                writeln!(file2, "{}{}", header, WriteKmerValues(trinuc_headers))
+                writeln!(file3, "{}{}", header, WriteKmerValues(trinuc_headers))
                     .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
                 // headers for tetranucs
                 let mut tetranuc_headers = Vec::new();
                 for key in four.map.keys().sorted() {
                     tetranuc_headers.push(key)
                 }
-                writeln!(file3, "{}{}", header, WriteKmerValues(tetranuc_headers))
+                writeln!(file4, "{}{}", header, WriteKmerValues(tetranuc_headers))
                     .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
 
                 for i in &self.0 {
@@ -272,7 +271,7 @@ impl Output {
                         false => format!(""),
                     };
                     writeln!(
-                        file1,
+                        file2,
                         "{}\t{}{}\t{}\t{}",
                         i.id,
                         desc,
@@ -283,7 +282,7 @@ impl Output {
                     .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
 
                     writeln!(
-                        file2,
+                        file3,
                         "{}\t{}{}\t{}\t{}",
                         i.id,
                         desc,
@@ -294,7 +293,7 @@ impl Output {
                     .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
 
                     writeln!(
-                        file3,
+                        file4,
                         "{}\t{}{}\t{}\t{}",
                         i.id,
                         desc,
@@ -305,9 +304,9 @@ impl Output {
                     .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
                 }
 
-                file1.flush().unwrap();
                 file2.flush().unwrap();
                 file3.flush().unwrap();
+                file4.flush().unwrap();
             }
             [..] => {} // Make the patterns exhaustive
         }

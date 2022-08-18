@@ -63,9 +63,9 @@ fn main() -> std::io::Result<()> {
     }
 
     // initiate the output TSV files
-    let output_file_1 = format!("./fw_out/{}{}", output, "_windows.tsv");
-    let window_file = File::create(&output_file_1).unwrap();
-    let window_file = BufWriter::new(window_file);
+    let output_file_0 = format!("./fw_out/{}{}", output, "_freq_windows.tsv");
+    let window_file_0 = File::create(&output_file_0).unwrap();
+    let window_file_0 = BufWriter::new(window_file_0);
 
     let output_file_2 = format!("./fw_out/{}{}", output, "_dinuc_windows.tsv");
     let window_file_2 = File::create(&output_file_2).unwrap();
@@ -82,7 +82,7 @@ fn main() -> std::io::Result<()> {
     // pass this function the matches from clap && the four files to write.
     fasta_windows(
         &matches,
-        window_file,
+        window_file_0,
         window_file_2,
         window_file_3,
         window_file_4,
