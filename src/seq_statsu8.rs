@@ -5,6 +5,7 @@ pub struct SeqStats {
     pub gc_skew: f32,
     pub at_skew: f32,
     pub shannon_entropy: f64,
+    pub nuc_counts: Vec<i32>,
     // proportions of nucleotides (& N's)
     pub g_s: f32,
     pub c_s: f32,
@@ -82,6 +83,7 @@ pub fn seq_stats(dna: &[u8], masked: bool) -> SeqStats {
         gc_skew: (g_counts - c_counts) as f32 / (g_counts + c_counts) as f32,
         at_skew: (a_counts - t_counts) as f32 / (a_counts + t_counts) as f32,
         shannon_entropy: entropy,
+        nuc_counts: vec![a_counts, c_counts, g_counts, t_counts],
         g_s: ((g_counts) as f32 / length),
         c_s: ((c_counts) as f32 / length),
         a_s: ((a_counts) as f32 / length),

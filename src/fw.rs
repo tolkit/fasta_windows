@@ -14,6 +14,7 @@ use std::sync::mpsc::channel;
 pub fn fasta_windows(
     matches: &clap::ArgMatches,
     mut window_file_0: BufWriter<File>,
+    mut window_file_1: BufWriter<File>,
     mut window_file_2: BufWriter<File>,
     mut window_file_3: BufWriter<File>,
     mut window_file_4: BufWriter<File>,
@@ -90,6 +91,7 @@ pub fn fasta_windows(
                     desc,
                     start,
                     end,
+                    nuc_counts: seq_stats.nuc_counts,
                     gc_proportion: seq_stats.gc_proportion,
                     gc_skew: seq_stats.gc_skew,
                     at_skew: seq_stats.at_skew,
@@ -138,6 +140,7 @@ pub fn fasta_windows(
 
     entry_writer.write_windows(&mut window_file_0, description)?;
     entry_writer.write_kmers(
+        &mut window_file_1,
         &mut window_file_2,
         &mut window_file_3,
         &mut window_file_4,
@@ -156,6 +159,7 @@ pub struct Entry {
     pub desc: String,
     pub start: usize,
     pub end: usize,
+    pub nuc_counts: Vec<i32>,
     pub gc_proportion: f32,
     pub gc_skew: f32,
     pub at_skew: f32,
@@ -226,6 +230,7 @@ impl Output {
 
     pub fn write_kmers(
         &mut self,
+        file1: &mut BufWriter<File>,
         file2: &mut BufWriter<File>,
         file3: &mut BufWriter<File>,
         file4: &mut BufWriter<File>,
@@ -243,6 +248,9 @@ impl Output {
                     false => header = "ID\tstart\tend\t".to_string(),
                 }
 
+                // headers for mononucs
+                writeln!(file1, "{}A\tC\tG\tT", header)
+                    .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
                 // headers for dinucs
                 let mut dinuc_headers = Vec::new();
                 for key in two.map.keys().sorted() {
@@ -270,6 +278,18 @@ impl Output {
                         true => format!("{}\t", i.desc),
                         false => format!(""),
                     };
+
+                    writeln!(
+                        file1,
+                        "{}\t{}{}\t{}\t{}",
+                        i.id,
+                        desc,
+                        i.start,
+                        i.end,
+                        WriteArray(i.nuc_counts.clone())
+                    )
+                    .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
+
                     writeln!(
                         file2,
                         "{}\t{}{}\t{}\t{}",
@@ -304,6 +324,7 @@ impl Output {
                     .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
                 }
 
+                file1.flush().unwrap();
                 file2.flush().unwrap();
                 file3.flush().unwrap();
                 file4.flush().unwrap();

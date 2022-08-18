@@ -67,6 +67,10 @@ fn main() -> std::io::Result<()> {
     let window_file_0 = File::create(&output_file_0).unwrap();
     let window_file_0 = BufWriter::new(window_file_0);
 
+    let output_file_1 = format!("./fw_out/{}{}", output, "_mononuc_windows.tsv");
+    let window_file_1 = File::create(&output_file_1).unwrap();
+    let window_file_1 = BufWriter::new(window_file_1);
+
     let output_file_2 = format!("./fw_out/{}{}", output, "_dinuc_windows.tsv");
     let window_file_2 = File::create(&output_file_2).unwrap();
     let window_file_2 = BufWriter::new(window_file_2);
@@ -83,6 +87,7 @@ fn main() -> std::io::Result<()> {
     fasta_windows(
         &matches,
         window_file_0,
+        window_file_1,
         window_file_2,
         window_file_3,
         window_file_4,
