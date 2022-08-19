@@ -3,13 +3,16 @@ use std::collections::HashMap;
 pub struct SeqStats {
     pub gc_proportion: f32,
     pub gc_skew: f32,
+    pub at_skew: f32,
     pub shannon_entropy: f64,
+    pub nuc_counts: Vec<i32>,
     // proportions of nucleotides (& N's)
     pub g_s: f32,
     pub c_s: f32,
     pub a_s: f32,
     pub t_s: f32,
     pub n_s: f32,
+    pub len: f32,
 }
 // function below reveals other ambiguous bases present in assemblies, not sure
 // how to deal with those yet.
@@ -79,12 +82,15 @@ pub fn seq_stats(dna: &[u8], masked: bool) -> SeqStats {
         gc_proportion: ((g_counts + c_counts) as f32
             / (g_counts + c_counts + a_counts + t_counts) as f32),
         gc_skew: (g_counts - c_counts) as f32 / (g_counts + c_counts) as f32,
+        at_skew: (a_counts - t_counts) as f32 / (a_counts + t_counts) as f32,
         shannon_entropy: entropy,
+        nuc_counts: vec![a_counts, c_counts, g_counts, t_counts, n_counts],
         g_s: ((g_counts) as f32 / length),
         c_s: ((c_counts) as f32 / length),
         a_s: ((a_counts) as f32 / length),
         t_s: ((t_counts) as f32 / length),
         n_s: ((n_counts) as f32 / length),
+        len: length,
     }
 }
 
