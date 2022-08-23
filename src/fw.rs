@@ -6,6 +6,7 @@ use crate::kmer_maps::{self, KmerMap, WriteArray, WriteKmerValues};
 use crate::kmeru8;
 use crate::seq_statsu8;
 
+use anyhow::Result;
 use bio::io::fasta;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
@@ -18,7 +19,7 @@ pub fn fasta_windows(
     mut window_file_2: BufWriter<File>,
     mut window_file_3: BufWriter<File>,
     mut window_file_4: BufWriter<File>,
-) -> std::io::Result<()> {
+) -> Result<()> {
     // get matches
     let input_fasta = matches.value_of("fasta").unwrap();
     let output = matches.value_of("output").unwrap();
@@ -46,9 +47,10 @@ pub fn fasta_windows(
     }
 
     let progress_bar = ProgressBar::new(nb_reads);
-    let pb_style = ProgressStyle::default_bar()
-        .template("[+]\tProcessing records: {bar:40.cyan/blue} {pos:>7}/{len:12}")
-        .progress_chars(">>-");
+    let pb_style = ProgressStyle::with_template(
+        "[+]\tProcessing records: {bar:40.cyan/blue} {pos:>7}/{len:12}",
+    )?
+    .progress_chars(">>-");
     progress_bar.set_style(pb_style);
 
     // second reader for the computation
@@ -183,11 +185,7 @@ pub struct Output(Vec<Entry>);
 
 impl Output {
     // write the windows file, optionally including a description
-    pub fn write_windows(
-        &mut self,
-        file: &mut BufWriter<File>,
-        description: bool,
-    ) -> std::io::Result<()> {
+    pub fn write_windows(&mut self, file: &mut BufWriter<File>, description: bool) -> Result<()> {
         let header;
 
         match description {
@@ -195,8 +193,7 @@ impl Output {
             false => header = "ID\tstart\tend\tGC_prop\tGC_skew\tAT_skew\tShannon_entropy\tProp_Gs\tProp_Cs\tProp_As\tProp_Ts\tProp_Ns\tCpG_prop\tDinucleotide_Shannon\tTrinucleotide_Shannon\tTetranucleotide_Shannon".to_string()
         }
 
-        writeln!(file, "{}", header)
-            .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
+        writeln!(file, "{}", header)?;
 
         for i in &self.0 {
             let desc = match description {
@@ -223,10 +220,9 @@ impl Output {
                 i.dinucleotides,
                 i.trinucleotides,
                 i.tetranucleotides,
-            )
-            .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
+            )?;
         }
-        file.flush().unwrap();
+        file.flush()?;
 
         Ok(())
     }
@@ -239,7 +235,7 @@ impl Output {
         file4: &mut BufWriter<File>,
         kmer_maps: Vec<KmerMap>,
         description: bool,
-    ) -> std::io::Result<()> {
+    ) -> Result<()> {
         // these are the arrays, tab separated bed-like format.
         // unpack kmer_maps
         match kmer_maps.as_slice() {
@@ -252,29 +248,25 @@ impl Output {
                 }
 
                 // headers for mononucs
-                writeln!(file1, "{}A\tC\tG\tT\tN", header)
-                    .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
+                writeln!(file1, "{}A\tC\tG\tT\tN", header)?;
                 // headers for dinucs
                 let mut dinuc_headers = Vec::new();
                 for key in two.map.keys().sorted() {
                     dinuc_headers.push(key)
                 }
-                writeln!(file2, "{}{}", header, WriteKmerValues(dinuc_headers))
-                    .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
+                writeln!(file2, "{}{}", header, WriteKmerValues(dinuc_headers))?;
                 // headers for trinucs
                 let mut trinuc_headers = Vec::new();
                 for key in three.map.keys().sorted() {
                     trinuc_headers.push(key)
                 }
-                writeln!(file3, "{}{}", header, WriteKmerValues(trinuc_headers))
-                    .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
+                writeln!(file3, "{}{}", header, WriteKmerValues(trinuc_headers))?;
                 // headers for tetranucs
                 let mut tetranuc_headers = Vec::new();
                 for key in four.map.keys().sorted() {
                     tetranuc_headers.push(key)
                 }
-                writeln!(file4, "{}{}", header, WriteKmerValues(tetranuc_headers))
-                    .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
+                writeln!(file4, "{}{}", header, WriteKmerValues(tetranuc_headers))?;
 
                 for i in &self.0 {
                     let desc = match description {
@@ -290,8 +282,7 @@ impl Output {
                         i.start,
                         i.end,
                         WriteArray(i.nuc_counts.clone())
-                    )
-                    .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
+                    )?;
 
                     writeln!(
                         file2,
@@ -301,8 +292,7 @@ impl Output {
                         i.start,
                         i.end,
                         WriteArray(i.divalues.clone())
-                    )
-                    .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
+                    )?;
 
                     writeln!(
                         file3,
@@ -312,8 +302,7 @@ impl Output {
                         i.start,
                         i.end,
                         WriteArray(i.trivalues.clone())
-                    )
-                    .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
+                    )?;
 
                     writeln!(
                         file4,
@@ -323,14 +312,13 @@ impl Output {
                         i.start,
                         i.end,
                         WriteArray(i.tetravalues.clone())
-                    )
-                    .unwrap_or_else(|_| eprintln!("[-]\tError in writing to file."));
+                    )?;
                 }
 
-                file1.flush().unwrap();
-                file2.flush().unwrap();
-                file3.flush().unwrap();
-                file4.flush().unwrap();
+                file1.flush()?;
+                file2.flush()?;
+                file3.flush()?;
+                file4.flush()?;
             }
             [..] => {} // Make the patterns exhaustive
         }

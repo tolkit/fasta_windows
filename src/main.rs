@@ -1,16 +1,16 @@
-// Max Brown 2022; Wellcome Sanger Institute
+// Max Brown & Matthieu Muffato 2022; Wellcome Sanger Institute
 
 // std imports
 use std::fs::{create_dir_all, File};
 use std::io::BufWriter;
 
 // non-std
+use anyhow::{Context, Result};
 use clap::{Arg, Command};
-
 // internal imports
 use fasta_windows::fw::fasta_windows;
 
-fn main() -> std::io::Result<()> {
+fn main() -> Result<()> {
     // command line options
     let matches = Command::new("Fasta windows")
         .version(clap::crate_version!())
@@ -55,7 +55,9 @@ fn main() -> std::io::Result<()> {
         )
         .get_matches();
     // parse command line options
-    let output = matches.value_of("output").unwrap();
+    let output = matches
+        .value_of("output")
+        .context("Could not find output in CLI")?;
 
     // create directory for output
     if let Err(e) = create_dir_all("./fw_out/") {
@@ -64,23 +66,23 @@ fn main() -> std::io::Result<()> {
 
     // initiate the output TSV files
     let output_file_0 = format!("./fw_out/{}{}", output, "_freq_windows.tsv");
-    let window_file_0 = File::create(&output_file_0).unwrap();
+    let window_file_0 = File::create(&output_file_0)?;
     let window_file_0 = BufWriter::new(window_file_0);
 
     let output_file_1 = format!("./fw_out/{}{}", output, "_mononuc_windows.tsv");
-    let window_file_1 = File::create(&output_file_1).unwrap();
+    let window_file_1 = File::create(&output_file_1)?;
     let window_file_1 = BufWriter::new(window_file_1);
 
     let output_file_2 = format!("./fw_out/{}{}", output, "_dinuc_windows.tsv");
-    let window_file_2 = File::create(&output_file_2).unwrap();
+    let window_file_2 = File::create(&output_file_2)?;
     let window_file_2 = BufWriter::new(window_file_2);
 
     let output_file_3 = format!("./fw_out/{}{}", output, "_trinuc_windows.tsv");
-    let window_file_3 = File::create(&output_file_3).unwrap();
+    let window_file_3 = File::create(&output_file_3)?;
     let window_file_3 = BufWriter::new(window_file_3);
 
     let output_file_4 = format!("./fw_out/{}{}", output, "_tetranuc_windows.tsv");
-    let window_file_4 = File::create(&output_file_4).unwrap();
+    let window_file_4 = File::create(&output_file_4)?;
     let window_file_4 = BufWriter::new(window_file_4);
 
     // pass this function the matches from clap && the four files to write.
