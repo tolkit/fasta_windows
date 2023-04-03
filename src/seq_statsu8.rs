@@ -12,6 +12,7 @@ pub struct SeqStats {
     pub a_s: f32,
     pub t_s: f32,
     pub n_s: f32,
+    pub masked: f32,
     pub len: f32,
 }
 // function below reveals other ambiguous bases present in assemblies, not sure
@@ -42,20 +43,45 @@ pub fn seq_stats(dna: &[u8], masked: bool) -> SeqStats {
     let a_counts: i32;
     let t_counts: i32;
     let n_counts: i32;
+    let masked_counts: i32;
+    let w_counts: i32;
+    let s_counts: i32;
 
     if masked {
-        g_counts = *counts.get(&71).unwrap_or(&0); // 71 == G;
-        c_counts = *counts.get(&67).unwrap_or(&0); // 67 == C;
-        a_counts = *counts.get(&65).unwrap_or(&0); // 65 == A;
-        t_counts = *counts.get(&84).unwrap_or(&0); // 84 == T;
-        n_counts = *counts.get(&78).unwrap_or(&0); // 78 == N;
+        g_counts = *counts.get(&b'G').unwrap_or(&0);
+        c_counts = *counts.get(&b'C').unwrap_or(&0);
+        a_counts = *counts.get(&b'A').unwrap_or(&0);
+        t_counts = *counts.get(&b'T').unwrap_or(&0);
+        n_counts = *counts.get(&b'N').unwrap_or(&0);
+        masked_counts = 0;
+        w_counts = *counts.get(&b'W').unwrap_or(&0);
+        s_counts = *counts.get(&b'S').unwrap_or(&0);
     } else {
-        g_counts = counts.get(&71).unwrap_or(&0) + counts.get(&103).unwrap_or(&0); // 71 == G; 103 == g
-        c_counts = counts.get(&67).unwrap_or(&0) + counts.get(&99).unwrap_or(&0); // 67 == C; 99 == c
-        a_counts = counts.get(&65).unwrap_or(&0) + counts.get(&97).unwrap_or(&0); // 65 == A; 97 == a
-        t_counts = counts.get(&84).unwrap_or(&0) + counts.get(&116).unwrap_or(&0); // 84 == T; 116 == t
-        n_counts = counts.get(&78).unwrap_or(&0) + counts.get(&110).unwrap_or(&0);
-        // 78 == N; 110 == n
+        g_counts = counts.get(&b'G').unwrap_or(&0) + counts.get(&b'g').unwrap_or(&0);
+        c_counts = counts.get(&b'C').unwrap_or(&0) + counts.get(&b'c').unwrap_or(&0);
+        a_counts = counts.get(&b'A').unwrap_or(&0) + counts.get(&b'a').unwrap_or(&0);
+        t_counts = counts.get(&b'T').unwrap_or(&0) + counts.get(&b't').unwrap_or(&0);
+        n_counts = counts.get(&b'N').unwrap_or(&0) + counts.get(&b'n').unwrap_or(&0);
+        // All valid lower case bases
+        masked_counts = counts.get(&b'a').unwrap_or(&0)
+            + counts.get(&b'c').unwrap_or(&0)
+            + counts.get(&b'g').unwrap_or(&0)
+            + counts.get(&b't').unwrap_or(&0)
+            + counts.get(&b'm').unwrap_or(&0)
+            + counts.get(&b'r').unwrap_or(&0)
+            + counts.get(&b'w').unwrap_or(&0)
+            + counts.get(&b's').unwrap_or(&0)
+            + counts.get(&b'y').unwrap_or(&0)
+            + counts.get(&b'k').unwrap_or(&0)
+            + counts.get(&b'v').unwrap_or(&0)
+            + counts.get(&b'h').unwrap_or(&0)
+            + counts.get(&b'b').unwrap_or(&0)
+            + counts.get(&b'd').unwrap_or(&0)
+            + counts.get(&b'n').unwrap_or(&0);
+        // additional weak bases (ambiguous A/T)
+        w_counts = counts.get(&b'W').unwrap_or(&0) + counts.get(&b'w').unwrap_or(&0);
+        // additional strong bases (ambiguous G/C)
+        s_counts = counts.get(&b'S').unwrap_or(&0) + counts.get(&b's').unwrap_or(&0);
     }
 
     // shannon entropy of the window
@@ -65,11 +91,11 @@ pub fn seq_stats(dna: &[u8], masked: bool) -> SeqStats {
     for byte in dna {
         // change lowercase nucleotides to uppercase ones.
         match byte {
-            103u8 => byte_count[71u8 as usize] += 1,
-            99u8 => byte_count[67u8 as usize] += 1,
-            97u8 => byte_count[65u8 as usize] += 1,
-            116u8 => byte_count[84u8 as usize] += 1,
-            110u8 => byte_count[78u8 as usize] += 1,
+            b'g' => byte_count[b'G' as usize] += 1,
+            b'c' => byte_count[b'C' as usize] += 1,
+            b'a' => byte_count[b'A' as usize] += 1,
+            b't' => byte_count[b'T' as usize] += 1,
+            b'n' => byte_count[b'N' as usize] += 1,
             _ => byte_count[*byte as usize] += 1,
         }
     }
@@ -79,8 +105,8 @@ pub fn seq_stats(dna: &[u8], masked: bool) -> SeqStats {
         entropy -= byte_probability * byte_probability.log2();
     }
     SeqStats {
-        gc_proportion: ((g_counts + c_counts) as f32
-            / (g_counts + c_counts + a_counts + t_counts) as f32),
+        gc_proportion: ((g_counts + c_counts + s_counts) as f32
+            / (g_counts + c_counts + s_counts + a_counts + t_counts + w_counts) as f32),
         gc_skew: (g_counts - c_counts) as f32 / (g_counts + c_counts) as f32,
         at_skew: (a_counts - t_counts) as f32 / (a_counts + t_counts) as f32,
         shannon_entropy: entropy,
@@ -90,6 +116,7 @@ pub fn seq_stats(dna: &[u8], masked: bool) -> SeqStats {
         a_s: ((a_counts) as f32 / length),
         t_s: ((t_counts) as f32 / length),
         n_s: ((n_counts) as f32 / length),
+        masked: ((masked_counts) as f32 / length),
         len: length,
     }
 }
@@ -97,12 +124,14 @@ pub fn seq_stats(dna: &[u8], masked: bool) -> SeqStats {
 #[cfg(test)]
 mod tests {
 
+    use crate::seq_statsu8::seq_stats;
+
     use super::nucleotide_counts;
 
-    const A: u8 = 65;
-    const C: u8 = 67;
-    const G: u8 = 71;
-    const T: u8 = 84;
+    const A: u8 = b'A';
+    const C: u8 = b'C';
+    const G: u8 = b'G';
+    const T: u8 = b'T';
 
     #[test]
     fn test_nucleotide_counts() {
@@ -115,5 +144,25 @@ mod tests {
         assert_eq!(2, *nuc_counts.get(&C).unwrap());
         assert_eq!(2, *nuc_counts.get(&G).unwrap());
         assert_eq!(2, *nuc_counts.get(&T).unwrap());
+    }
+
+    #[test]
+    fn test_masked_proportion() {
+        let short_dna_string = "AAaCCcTTtGGg".as_bytes();
+
+        let stats = seq_stats(short_dna_string, false);
+
+        // One third masked
+        assert_eq!(1.0 / 3.0, stats.masked);
+    }
+
+    #[test]
+    fn test_ambiguous_gc_proportion() {
+        let short_dna_string = "AASCTTGsWw".as_bytes();
+
+        let stats = seq_stats(short_dna_string, false);
+
+        // 4 out of 10 bases are GC
+        assert_eq!(0.4, stats.gc_proportion);
     }
 }
