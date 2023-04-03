@@ -77,7 +77,7 @@ fn gen_all_kmers(k: usize) -> Vec<String> {
     } else {
         for suffix in gen_all_kmers(k - 1) {
             for nt in &nucleotides {
-                let new = suffix.clone() + &nt;
+                let new = suffix.clone() + nt;
                 output.push(new);
             }
         }
@@ -95,7 +95,7 @@ impl Display for WriteArray {
 
         for num in &self.0[0..self.0.len() - 1] {
             tab_separated.push_str(&num.to_string());
-            tab_separated.push_str("\t");
+            tab_separated.push('\t');
         }
 
         tab_separated.push_str(&self.0[self.0.len() - 1].to_string());
@@ -114,10 +114,10 @@ impl<'a> Display for WriteKmerValues<'a> {
         for kmer in &self.0[0..self.0.len() - 1] {
             let kmer_str = std::str::from_utf8(kmer).unwrap();
             tab_separated.push_str(kmer_str);
-            tab_separated.push_str("\t");
+            tab_separated.push('\t');
         }
 
-        tab_separated.push_str(std::str::from_utf8(&self.0[self.0.len() - 1]).unwrap());
+        tab_separated.push_str(std::str::from_utf8(self.0[self.0.len() - 1]).unwrap());
         write!(f, "{}", tab_separated)
     }
 }

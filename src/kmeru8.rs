@@ -5,18 +5,27 @@ use std::sync::mpsc::channel;
 // calculating shannon diversity of di/tri/tetranucleotides
 // convenience struct
 pub struct KmerStats {
+    // the frequency distribution of the kmer
     pub freq_dist_k: Vec<i32>,
+    // the length of the kmer
     pub kmer_length: usize,
+    // the shannon diversity
     pub shannon: f64,
 }
 
 // punted to main.rs
 pub struct ShannonDiversity {
+    // of dinucleotides
     pub dinucleotides: f64,
+    // of trinucleotides
     pub trinucleotides: f64,
+    // of tetranucleotides
     pub tetranucleotides: f64,
+    // the dimer frequency distribution
     pub di_freq: Vec<i32>,
+    // the trimer frequency distribution
     pub tri_freq: Vec<i32>,
+    // the tetramer frequency distribution
     pub tetra_freq: Vec<i32>,
 }
 

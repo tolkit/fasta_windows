@@ -159,25 +159,46 @@ pub fn fasta_windows(
 
 // the output struct
 pub struct Entry {
+    // the id from the fasta file
     pub id: String,
+    // the description from the fasta file
     pub desc: String,
+    // the start of the window
     pub start: usize,
+    // the end of the window
     pub end: usize,
+    // the nucleotide counts
     pub nuc_counts: Vec<i32>,
+    // the gc proportion
     pub gc_proportion: f32,
+    // gc skew
     pub gc_skew: f32,
+    // at skew
     pub at_skew: f32,
+    // shannon entropy
     pub shannon_entropy: f64,
+    // number of g's
     pub g_s: f32,
+    // number of c's
     pub c_s: f32,
+    // number of a's
     pub a_s: f32,
+    // number of t's
     pub t_s: f32,
+    // number of n's
     pub n_s: f32,
+    // number of masked bases
     pub masked: f32,
+    // number of cpg sites
     pub cpg_s: f32,
+    // dinucleotide shannon entropy
     pub dinucleotides: f64,
+    // trinucleotide shannon entropy
     pub trinucleotides: f64,
+    // tetranucleotide shannon entropy
     pub tetranucleotides: f64,
+    // the frequency distributions of 
+    // each of the 3 kmer classes
     pub divalues: Vec<i32>,
     pub trivalues: Vec<i32>,
     pub tetravalues: Vec<i32>,
@@ -188,41 +209,45 @@ pub struct Output(Vec<Entry>);
 impl Output {
     // write the windows file, optionally including a description
     pub fn write_windows(&mut self, file: &mut BufWriter<File>, description: bool) -> Result<()> {
-        let header;
+        let header= match description {
+            true => "ID\tdescription\tstart\tend\tGC_prop\tGC_skew\tAT_skew\tShannon_entropy\tProp_Gs\tProp_Cs\tProp_As\tProp_Ts\tProp_Ns\tProp_masked\tCpG_prop\tDinucleotide_Shannon\tTrinucleotide_Shannon\tTetranucleotide_Shannon".to_string(),
+            false => "ID\tstart\tend\tGC_prop\tGC_skew\tAT_skew\tShannon_entropy\tProp_Gs\tProp_Cs\tProp_As\tProp_Ts\tProp_Ns\tProp_masked\tCpG_prop\tDinucleotide_Shannon\tTrinucleotide_Shannon\tTetranucleotide_Shannon".to_string()
+        };
 
-        match description {
-            true => header = "ID\tdescription\tstart\tend\tGC_prop\tGC_skew\tAT_skew\tShannon_entropy\tProp_Gs\tProp_Cs\tProp_As\tProp_Ts\tProp_Ns\tProp_masked\tCpG_prop\tDinucleotide_Shannon\tTrinucleotide_Shannon\tTetranucleotide_Shannon".to_string(),
-            false => header = "ID\tstart\tend\tGC_prop\tGC_skew\tAT_skew\tShannon_entropy\tProp_Gs\tProp_Cs\tProp_As\tProp_Ts\tProp_Ns\tProp_masked\tCpG_prop\tDinucleotide_Shannon\tTrinucleotide_Shannon\tTetranucleotide_Shannon".to_string()
-        }
+        writeln!(file, "{header}")?;
 
-        writeln!(file, "{}", header)?;
-
-        for i in &self.0 {
+        for Entry {
+            id,
+            desc,
+            start,
+            end,
+            nuc_counts: _,
+            gc_proportion,
+            gc_skew,
+            at_skew,
+            shannon_entropy,
+            g_s,
+            c_s,
+            a_s,
+            t_s,
+            n_s,
+            masked,
+            cpg_s,
+            dinucleotides,
+            trinucleotides,
+            tetranucleotides,
+            divalues: _,
+            trivalues: _,
+            tetravalues: _,
+        } in &self.0
+        {
             let desc = match description {
-                true => format!("{}\t", i.desc),
-                false => format!(""),
+                true => format!("{desc}\t"),
+                false => String::new(),
             };
             writeln!(
                 file,
-                "{}\t{}{}\t{}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}",
-                i.id,
-                desc,
-                i.start,
-                i.end,
-                i.gc_proportion,
-                i.gc_skew,
-                i.at_skew,
-                i.shannon_entropy,
-                i.g_s,
-                i.c_s,
-                i.a_s,
-                i.t_s,
-                i.n_s,
-                i.masked,
-                i.cpg_s,
-                i.dinucleotides,
-                i.trinucleotides,
-                i.tetranucleotides,
+                "{id}\t{desc}{start}\t{end}\t{gc_proportion:.3}\t{gc_skew:.3}\t{at_skew:.3}\t{shannon_entropy:.3}\t{g_s:.3}\t{c_s:.3}\t{a_s:.3}\t{t_s:.3}\t{n_s:.3}\t{masked:.3}\t{cpg_s:.3}\t{dinucleotides:.3}\t{trinucleotides:.3}\t{tetranucleotides:.3}",
             )?;
         }
         file.flush()?;
@@ -244,78 +269,76 @@ impl Output {
         match kmer_maps.as_slice() {
             [two, three, four] => {
                 // headers for all
-                let header: String;
-                match description {
-                    true => header = "ID\tdescription\tstart\tend\t".to_string(),
-                    false => header = "ID\tstart\tend\t".to_string(),
-                }
+                let header = match description {
+                    true => "ID\tdescription\tstart\tend\t".to_string(),
+                    false => "ID\tstart\tend\t".to_string(),
+                };
 
                 // headers for mononucs
-                writeln!(file1, "{}A\tC\tG\tT\tN", header)?;
+                writeln!(file1, "{header}A\tC\tG\tT\tN")?;
                 // headers for dinucs
                 let mut dinuc_headers = Vec::new();
                 for key in two.map.keys().sorted() {
                     dinuc_headers.push(key)
                 }
-                writeln!(file2, "{}{}", header, WriteKmerValues(dinuc_headers))?;
+                let dinucs = WriteKmerValues(dinuc_headers);
+                writeln!(file2, "{header}{dinucs}")?;
                 // headers for trinucs
                 let mut trinuc_headers = Vec::new();
                 for key in three.map.keys().sorted() {
                     trinuc_headers.push(key)
                 }
-                writeln!(file3, "{}{}", header, WriteKmerValues(trinuc_headers))?;
+                let trinucs = WriteKmerValues(trinuc_headers);
+                writeln!(file3, "{header}{trinucs}")?;
                 // headers for tetranucs
                 let mut tetranuc_headers = Vec::new();
                 for key in four.map.keys().sorted() {
                     tetranuc_headers.push(key)
                 }
-                writeln!(file4, "{}{}", header, WriteKmerValues(tetranuc_headers))?;
+                let tetranucs = WriteKmerValues(tetranuc_headers);
+                writeln!(file4, "{header}{tetranucs}")?;
 
-                for i in &self.0 {
+                for Entry {
+                    id,
+                    desc,
+                    start,
+                    end,
+                    nuc_counts,
+                    gc_proportion: _,
+                    gc_skew: _,
+                    at_skew: _,
+                    shannon_entropy: _,
+                    g_s: _,
+                    c_s: _,
+                    a_s: _,
+                    t_s: _,
+                    n_s: _,
+                    masked: _,
+                    cpg_s: _,
+                    dinucleotides: _,
+                    trinucleotides: _,
+                    tetranucleotides: _,
+                    divalues,
+                    trivalues,
+                    tetravalues,
+                } in &self.0
+                {
                     let desc = match description {
-                        true => format!("{}\t", i.desc),
-                        false => format!(""),
+                        true => format!("{desc}\t"),
+                        false => String::new(),
                     };
 
-                    writeln!(
-                        file1,
-                        "{}\t{}{}\t{}\t{}",
-                        i.id,
-                        desc,
-                        i.start,
-                        i.end,
-                        WriteArray(i.nuc_counts.clone())
-                    )?;
+                    let nuc_counts = WriteArray(nuc_counts.clone());
+                    writeln!(file1, "{id}\t{desc}{start}\t{end}\t{nuc_counts}")?;
 
-                    writeln!(
-                        file2,
-                        "{}\t{}{}\t{}\t{}",
-                        i.id,
-                        desc,
-                        i.start,
-                        i.end,
-                        WriteArray(i.divalues.clone())
-                    )?;
+                    let divalues_vec = WriteArray(divalues.clone());
+                    writeln!(file2, "{id}\t{desc}{start}\t{end}\t{divalues_vec}",)?;
 
-                    writeln!(
-                        file3,
-                        "{}\t{}{}\t{}\t{}",
-                        i.id,
-                        desc,
-                        i.start,
-                        i.end,
-                        WriteArray(i.trivalues.clone())
-                    )?;
+                    let trivalues_vec = WriteArray(trivalues.clone());
+                    writeln!(file3, "{id}\t{desc}{start}\t{end}\t{trivalues_vec}",)?;
 
-                    writeln!(
-                        file4,
-                        "{}\t{}{}\t{}\t{}",
-                        i.id,
-                        desc,
-                        i.start,
-                        i.end,
-                        WriteArray(i.tetravalues.clone())
-                    )?;
+                    let tetravalues_vec = WriteArray(tetravalues.clone());
+                    writeln!(file4, "{id}\t{desc}{start}\t{end}\t{tetravalues_vec}",)?;
                 }
 
                 file1.flush()?;
