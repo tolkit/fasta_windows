@@ -1,7 +1,7 @@
 # fasta_windows
 
 <p align="center">
-    <img width="300" height="132" src="https://www.darwintreeoflife.org/wp-content/themes/dtol/dist/assets/gfx/dtol-logo-round.png">
+    <img width="300" height="132" src="https://www.sanger.ac.uk/wp-content/uploads/DToL-logo_notext-300x300.png">
 </p>
 
 Written for Darwin Tree of Life chromosomal level genome assemblies. The executable takes a fasta formatted file and calculates some statistics of interest in windows:
