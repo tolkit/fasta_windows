@@ -1,5 +1,6 @@
 use itertools::Itertools;
 use std::io::prelude::*;
+use std::path::PathBuf;
 use std::{fs::File, io::BufWriter};
 
 use crate::kmer_maps::{self, KmerMap, WriteArray, WriteKmerValues};
@@ -21,11 +22,16 @@ pub fn fasta_windows(
     mut window_file_4: BufWriter<File>,
 ) -> Result<()> {
     // get matches
-    let input_fasta = matches.value_of("fasta").unwrap();
-    let output = matches.value_of("output").unwrap();
-    let window_size: usize = matches.value_of_t("window_size").unwrap();
-    let masked = matches.is_present("masked");
-    let description = matches.is_present("description");
+    let input_fasta = matches
+        .get_one::<PathBuf>("fasta")
+        .expect("handled by clap");
+    let output = matches
+        .get_one::<PathBuf>("output")
+        .expect("handled by clap");
+    let window_size = matches.get_one::<usize>("window_size").cloned().unwrap();
+    let masked = matches.get_one::<bool>("masked").cloned().unwrap();
+    let description = matches.get_one::<bool>("description").cloned().unwrap();
+    let ctw = matches.get_one::<bool>("ctw").cloned().unwrap();
 
     // compute the 2-4mer kmer maps once only
     // hard code with false until I decide how to deal with
@@ -82,6 +88,12 @@ pub fn fasta_windows(
                 // unpack values
                 let kmer_stats = kmeru8::kmer_diversity(win, kmer_maps.clone());
 
+                let ctw_bpb = if ctw {
+                    kmeru8::ctw_bits_per_base_dna(win, 6)
+                } else {
+                    0.0
+                };
+
                 // get description if present
                 let desc = match fasta_record.desc() {
                     Some(d) => d.to_string(),
@@ -98,6 +110,7 @@ pub fn fasta_windows(
                     gc_skew: seq_stats.gc_skew,
                     at_skew: seq_stats.at_skew,
                     shannon_entropy: seq_stats.shannon_entropy,
+                    ctw_bpb,
                     g_s: seq_stats.g_s,
                     c_s: seq_stats.c_s,
                     a_s: seq_stats.a_s,
@@ -142,7 +155,7 @@ pub fn fasta_windows(
 
     eprintln!("[+]\tWriting output to files");
 
-    entry_writer.write_windows(&mut window_file_0, description)?;
+    entry_writer.write_windows(&mut window_file_0, description, ctw)?;
     entry_writer.write_kmers(
         &mut window_file_1,
         &mut window_file_2,
@@ -152,7 +165,10 @@ pub fn fasta_windows(
         description,
     )?;
 
-    eprintln!("[+]\tOutput written to directory: ./fw_out/{}", output);
+    eprintln!(
+        "[+]\tOutput written to directory: ./fw_out/{}",
+        output.display()
+    );
 
     Ok(())
 }
@@ -177,6 +193,8 @@ pub struct Entry {
     pub at_skew: f32,
     // shannon entropy
     pub shannon_entropy: f64,
+    // context-tree weighting bits per base
+    pub ctw_bpb: f64,
     // number of g's
     pub g_s: f32,
     // number of c's
@@ -197,7 +215,7 @@ pub struct Entry {
     pub trinucleotides: f64,
     // tetranucleotide shannon entropy
     pub tetranucleotides: f64,
-    // the frequency distributions of 
+    // the frequency distributions of
     // each of the 3 kmer classes
     pub divalues: Vec<i32>,
     pub trivalues: Vec<i32>,
@@ -208,10 +226,17 @@ pub struct Output(Vec<Entry>);
 
 impl Output {
     // write the windows file, optionally including a description
-    pub fn write_windows(&mut self, file: &mut BufWriter<File>, description: bool) -> Result<()> {
-        let header= match description {
-            true => "ID\tdescription\tstart\tend\tGC_prop\tGC_skew\tAT_skew\tShannon_entropy\tProp_Gs\tProp_Cs\tProp_As\tProp_Ts\tProp_Ns\tProp_masked\tCpG_prop\tDinucleotide_Shannon\tTrinucleotide_Shannon\tTetranucleotide_Shannon".to_string(),
-            false => "ID\tstart\tend\tGC_prop\tGC_skew\tAT_skew\tShannon_entropy\tProp_Gs\tProp_Cs\tProp_As\tProp_Ts\tProp_Ns\tProp_masked\tCpG_prop\tDinucleotide_Shannon\tTrinucleotide_Shannon\tTetranucleotide_Shannon".to_string()
+    pub fn write_windows(
+        &mut self,
+        file: &mut BufWriter<File>,
+        description: bool,
+        ctw: bool,
+    ) -> Result<()> {
+        let header= match (description, ctw) {
+            (true, true) => "ID\tdescription\tstart\tend\tGC_prop\tGC_skew\tAT_skew\tShannon_entropy\tctw\tProp_Gs\tProp_Cs\tProp_As\tProp_Ts\tProp_Ns\tProp_masked\tCpG_prop\tDinucleotide_Shannon\tTrinucleotide_Shannon\tTetranucleotide_Shannon".to_string(),
+            (false, true) => "ID\tstart\tend\tGC_prop\tGC_skew\tAT_skew\tShannon_entropy\tctw\tProp_Gs\tProp_Cs\tProp_As\tProp_Ts\tProp_Ns\tProp_masked\tCpG_prop\tDinucleotide_Shannon\tTrinucleotide_Shannon\tTetranucleotide_Shannon".to_string(),
+            (true, false) => "ID\tdescription\tstart\tend\tGC_prop\tGC_skew\tAT_skew\tShannon_entropy\tProp_Gs\tProp_Cs\tProp_As\tProp_Ts\tProp_Ns\tProp_masked\tCpG_prop\tDinucleotide_Shannon\tTrinucleotide_Shannon\tTetranucleotide_Shannon".to_string(),
+            (false, false) => "ID\tstart\tend\tGC_prop\tGC_skew\tAT_skew\tShannon_entropy\tProp_Gs\tProp_Cs\tProp_As\tProp_Ts\tProp_Ns\tProp_masked\tCpG_prop\tDinucleotide_Shannon\tTrinucleotide_Shannon\tTetranucleotide_Shannon".to_string(),
         };
 
         writeln!(file, "{header}")?;
@@ -226,6 +251,7 @@ impl Output {
             gc_skew,
             at_skew,
             shannon_entropy,
+            ctw_bpb,
             g_s,
             c_s,
             a_s,
@@ -245,9 +271,15 @@ impl Output {
                 true => format!("{desc}\t"),
                 false => String::new(),
             };
+
+            let ctw_format = match ctw {
+                true => format!("{ctw_bpb:.3}\t"),
+                false => String::new(),
+            };
+
             writeln!(
                 file,
-                "{id}\t{desc}{start}\t{end}\t{gc_proportion:.3}\t{gc_skew:.3}\t{at_skew:.3}\t{shannon_entropy:.3}\t{g_s:.3}\t{c_s:.3}\t{a_s:.3}\t{t_s:.3}\t{n_s:.3}\t{masked:.3}\t{cpg_s:.3}\t{dinucleotides:.3}\t{trinucleotides:.3}\t{tetranucleotides:.3}",
+                "{id}\t{desc}{start}\t{end}\t{gc_proportion:.3}\t{gc_skew:.3}\t{at_skew:.3}\t{shannon_entropy:.3}\t{ctw_format}{g_s:.3}\t{c_s:.3}\t{a_s:.3}\t{t_s:.3}\t{n_s:.3}\t{masked:.3}\t{cpg_s:.3}\t{dinucleotides:.3}\t{trinucleotides:.3}\t{tetranucleotides:.3}",
             )?;
         }
         file.flush()?;
@@ -308,6 +340,7 @@ impl Output {
                     gc_skew: _,
                     at_skew: _,
                     shannon_entropy: _,
+                    ctw_bpb: _,
                     g_s: _,
                     c_s: _,
                     a_s: _,

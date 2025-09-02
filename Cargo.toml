@@ -1,6 +1,6 @@
 [package]
 name = "fasta_windows"
-version = "0.2.5"
+version = "0.2.6"
 authors = ["Max Brown <mb39@sanger.ac.uk>", "Matthieu Muffato", "Rich Challis"]
 edition = "2021"
 license = "MIT"
@@ -12,9 +12,9 @@ keywords = ["fasta", "windows", "genomics"]
 categories = ["command-line-utilities", "science"]
 
 [dependencies]
-clap = {version = "3.1.8", features = ["cargo"]}
-rayon = "1.5.0"
-indicatif = "0.17.0"
-itertools = "0.10.1"
-anyhow = "1.0.62"
-bio = "1.1.0"
+clap = {version = "4.5.47", features = ["cargo"]}
+rayon = "1.11.0"
+indicatif = "0.18.0"
+itertools = "0.14.0"
+anyhow = "1.0.99"
+bio = "2.3.0"

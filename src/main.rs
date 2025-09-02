@@ -4,10 +4,11 @@
 // std imports
 use std::fs::{create_dir_all, File};
 use std::io::BufWriter;
+use std::path::PathBuf;
 
 // non-std
 use anyhow::{Context, Result};
-use clap::{Arg, Command, crate_authors};
+use clap::{crate_authors, value_parser, Arg, ArgAction, Command};
 // internal imports
 use fasta_windows::fw::fasta_windows;
 
@@ -22,8 +23,9 @@ fn main() -> Result<()> {
             Arg::new("fasta")
                 .short('f')
                 .long("fasta")
-                .takes_value(true)
+                .num_args(1)
                 .required(true)
+                .value_parser(value_parser!(PathBuf))
                 .help("The input fasta file."),
         )
         .arg(
@@ -31,13 +33,15 @@ fn main() -> Result<()> {
                 .short('w')
                 .long("window_size")
                 .help("Integer size of window for statistics to be computed over.")
-                .takes_value(true)
+                .num_args(1)
+                .value_parser(value_parser!(usize))
                 .default_value("1000"),
         )
         .arg(
             Arg::new("description")
                 .short('d')
                 .long("description")
+                .action(ArgAction::SetTrue)
                 .help("Add an extra column to _windows.tsv output with fasta header descriptions."),
         )
         .arg(
@@ -45,20 +49,30 @@ fn main() -> Result<()> {
                 .short('o')
                 .long("output")
                 .help("Output filename for the TSV's (without extension).")
-                .takes_value(true)
+                .value_parser(value_parser!(PathBuf))
+                .num_args(1)
                 .required(true),
         )
         .arg(
             Arg::new("masked")
                 .short('m')
                 .long("masked")
+                .action(ArgAction::SetTrue)
                 .help("Consider only uppercase nucleotides in the calculations."),
+        )
+        .arg(
+            Arg::new("ctw")
+                .short('c')
+                .long("ctw")
+                .action(ArgAction::SetTrue)
+                .help("Calculate the Context-Tree Weighting (how compressible a sequence is)."),
         )
         .get_matches();
     // parse command line options
     let output = matches
-        .value_of("output")
-        .context("Could not find output in CLI")?;
+        .get_one::<PathBuf>("output")
+        .context("Could not find output in CLI")?
+        .display();
 
     // create directory for output
     if let Err(e) = create_dir_all("./fw_out/") {
