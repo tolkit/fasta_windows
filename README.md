@@ -95,6 +95,28 @@ OV656674.1	7000	8000	81	45	79	52	63	74	65	62	69	82	59	52	44	62	59	51
 OV656674.1	8000	9000	103	71	49	87	70	57	54	54	59	44	40	51	78	62	52	68
 ```
 
+## Entropy mode (centromere / repeat detection pipeline)
+
+The `-e` flag enables a fast entropy-only mode that outputs a 5-column BED file suitable for repeat and centromere detection:
+
+```bash
+fasta_windows -e -f genome.fa -w 5000 -o species_name
+# → fw_out/species_name_entropy.bed
+# Columns: chrom  start  end  shannon_entropy  ctw_bits_per_base
+```
+
+Column 4 is Shannon entropy (bits, max 2.0 for equal ACGT). Column 5 is CTW (Context-Tree Weighting) bits per base — a compressibility measure that is independently sensitive to tandem repeats. Low values in either column indicate low-complexity sequence (satellite arrays, telomeres, centromeres).
+
+This output feeds directly into **[fw_regions](https://github.com/tolkit/fw_regions)**, which detects the low-complexity regions and provides a satellite repeat database pipeline. See that repository for the full workflow.
+
+A visualisation script is included:
+
+```bash
+Rscript plot_entropy.R -i fw_out/species_name_entropy.bed -o species_name
+# Optional overlays: -r regions.bed -s satellite_windows.bed -m satellite_metadata.tsv
+# Output: species_name_entropy_plot.pdf (one page per chromosome)
+```
+
 ### Comments, updates & bugs
 
 As of version 0.2.2, I've removed canonical kmers as an option; it was really computationally expensive and I couldn't think of a way to efficienty add it in. End users that wish this are pointed in the direction of <a href="https://github.com/tolkit/fw_group">fw_group</a>, which will at some point soon provide this functionality.
