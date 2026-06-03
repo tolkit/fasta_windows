@@ -236,7 +236,9 @@ draw_sat_panel <- function(sdat, all_wins, xlim, top_ids, sat_meta, sat_cols, sh
     lines(mx, yy, col = sat_cols[j], lwd = 1.5)
 
     lab <- if (!is.null(sat_meta) && sid %in% sat_meta$sat_id) {
-      sprintf("%s (%d bp)", sid, sat_meta$rep_period[sat_meta$sat_id == sid])
+      row    <- sat_meta[sat_meta$sat_id == sid, ]
+      source <- if (nchar(as.character(row$source_genomes)) > 0) as.character(row$source_genomes) else "?"
+      sprintf("%s (%d bp, %s)", sid, row$rep_period, source)
     } else sid
     legend_labs <- c(legend_labs, lab)
     legend_cols <- c(legend_cols, sat_cols[j])
