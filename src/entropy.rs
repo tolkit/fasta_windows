@@ -138,7 +138,11 @@ pub fn entropy_windows(matches: &clap::ArgMatches, mut bed_file: BufWriter<File>
     eprintln!("[+]\tWriting BED output");
     for ((id, _), windows) in records.iter().zip(results.iter()) {
         for &(start, end, entropy, ctw) in windows {
-            writeln!(bed_file, "{}\t{}\t{}\t{:.6}\t{:.6}", id, start, end, entropy, ctw)?;
+            writeln!(
+                bed_file,
+                "{}\t{}\t{}\t{:.6}\t{:.6}",
+                id, start, end, entropy, ctw
+            )?;
         }
     }
     bed_file.flush()?;

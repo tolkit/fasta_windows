@@ -1,3 +1,5 @@
+#[cfg(feature = "entropy")]
+pub mod entropy;
 pub mod fw;
 pub mod kmer_maps;
 pub mod kmeru8;
