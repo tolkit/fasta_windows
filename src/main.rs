@@ -3,6 +3,7 @@
 
 use std::fs::{create_dir_all, File};
 use std::io::BufWriter;
+use std::path::Path;
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
@@ -78,6 +79,13 @@ fn main() -> Result<()> {
 
     let matches = cmd.get_matches();
 
+    // Large buffers: output arrives in big per-batch chunks from the writer thread.
+    let create = |path: String| -> Result<BufWriter<File>> {
+        let file =
+            File::create(Path::new(&path)).with_context(|| format!("could not create {path}"))?;
+        Ok(BufWriter::with_capacity(1 << 20, file))
+    };
+
     let output = matches
         .get_one::<PathBuf>("output")
         .context("Could not find output in CLI")?
@@ -90,24 +98,15 @@ fn main() -> Result<()> {
     #[cfg(feature = "entropy")]
     if matches.get_flag("entropy") {
         use fasta_windows::entropy::entropy_windows;
-        let bed_file = BufWriter::new(File::create(format!("./fw_out/{output}_entropy.bed"))?);
+        let bed_file = create(format!("./fw_out/{output}_entropy.bed"))?;
         return entropy_windows(&matches, bed_file);
     }
 
-    let window_file_0 =
-        BufWriter::new(File::create(format!("./fw_out/{output}_freq_windows.tsv"))?);
-    let window_file_1 = BufWriter::new(File::create(format!(
-        "./fw_out/{output}_mononuc_windows.tsv"
-    ))?);
-    let window_file_2 = BufWriter::new(File::create(format!(
-        "./fw_out/{output}_dinuc_windows.tsv"
-    ))?);
-    let window_file_3 = BufWriter::new(File::create(format!(
-        "./fw_out/{output}_trinuc_windows.tsv"
-    ))?);
-    let window_file_4 = BufWriter::new(File::create(format!(
-        "./fw_out/{output}_tetranuc_windows.tsv"
-    ))?);
+    let window_file_0 = create(format!("./fw_out/{output}_freq_windows.tsv"))?;
+    let window_file_1 = create(format!("./fw_out/{output}_mononuc_windows.tsv"))?;
+    let window_file_2 = create(format!("./fw_out/{output}_dinuc_windows.tsv"))?;
+    let window_file_3 = create(format!("./fw_out/{output}_trinuc_windows.tsv"))?;
+    let window_file_4 = create(format!("./fw_out/{output}_tetranuc_windows.tsv"))?;
 
     fasta_windows(
         &matches,

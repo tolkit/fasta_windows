@@ -61,9 +61,11 @@ cargo build --release
 
 The default window size is 1kb.
 
+The input may be plain or gzip-compressed FASTA. For bzip2, xz and zstd input, build with `cargo build --release --features compression` (this compiles the C compression libraries).
+
 ## Output
 
-Output is now a tsv with bed-like format in the first three columns:
+Output is now a tsv with bed-like format in the first three columns. Rows are written in the same order as the records in the input FASTA:
 
 ```
 ID	start	end	GC_prop	GC_skew	AT_skew	Shannon_entropy	Prop_Gs	Prop_Cs	Prop_As	Prop_Ts	Prop_Ns	CpG_prop	Dinucleotide_Shannon	Trinucleotide_Shannon	Tetranucleotide_Shannon
@@ -78,7 +80,7 @@ OV656674.1	7000	8000	0.526	-0.004	0.084	1.996	0.262	0.264	0.257	0.217	0.000	0.06
 OV656674.1	8000	9000	0.430	-0.093	0.088	1.980	0.195	0.235	0.310	0.260	0.000	0.054	3.955	5.899	7.719
 ```
 
-Also output (non-optional at the moment), are three more TSV's, which are the arrays of di/tri/tetranucleotide frequencies in each window. These files are large, especially as tetranucleotide frequencies will contain 4e4 columns. The kmers are sorted lexicographically from left -> right (AA(AA) to TT(TT)).
+Also output (non-optional at the moment), are three more TSV's, which are the arrays of di/tri/tetranucleotide frequencies in each window. These files are large, especially as tetranucleotide frequencies will contain 4e4 columns. The kmers are sorted lexicographically from left -> right (AA(AA) to TT(TT)). Only k-mers made entirely of A, C, G and T (in either case) are counted; any other character, such as N or an IUPAC ambiguity code, breaks the k-mer.
 
 e.g. for dinucleotide frequencies:
 

@@ -3,9 +3,9 @@ use std::path::PathBuf;
 use std::{fs::File, io::BufWriter};
 
 use anyhow::Result;
-use indicatif::{ProgressBar, ProgressStyle};
-use needletail::parse_fastx_file;
-use rayon::prelude::*;
+
+use crate::fw::CTW_DEPTH;
+use crate::pipeline::{self, push_uint};
 
 // Bins each byte into one of 6 classes: A=0 C=1 G=2 T=3 N=4 other=5.
 // Lowercase acgtn are folded to their uppercase equivalents.
@@ -25,10 +25,10 @@ const fn build_nuc_lut() -> [u8; 256] {
     lut
 }
 
-// Masked mode: only uppercase ACGTN are counted; everything else maps to 255 (skip).
+// Masked mode: only uppercase ACGTN are counted; everything else goes to bin 6 (skipped).
 const MASKED_LUT: [u8; 256] = build_masked_lut();
 const fn build_masked_lut() -> [u8; 256] {
-    let mut lut = [255u8; 256];
+    let mut lut = [6u8; 256];
     lut[b'A' as usize] = 0;
     lut[b'C' as usize] = 1;
     lut[b'G' as usize] = 2;
@@ -39,28 +39,31 @@ const fn build_masked_lut() -> [u8; 256] {
 
 /// Shannon entropy of a DNA window using a compile-time LUT.
 ///
-/// Uses 6-bin counting (ACGTN + other) over a single array that fits in one
-/// cache line, enabling better auto-vectorisation than the 256-entry fallback.
-/// Ambiguous IUPAC codes (W, S, M, …) are collapsed into the "other" bin.
+/// Counts 6 bins (ACGTN + other); ambiguous IUPAC codes (W, S, M, …) are
+/// collapsed into "other". Four interleaved count tables avoid store-forwarding
+/// stalls on runs of the same base.
 ///
 /// masked=false: lowercase bases fold to uppercase and are counted normally.
 /// masked=true:  only uppercase ACGTN contribute; denominator is their count.
 #[inline(always)]
 pub fn entropy_fast(dna: &[u8], masked: bool) -> f64 {
-    let mut counts = [0u32; 6];
-    if masked {
-        for &byte in dna {
-            let idx = MASKED_LUT[byte as usize];
-            if idx < 255 {
-                counts[idx as usize] += 1;
-            }
-        }
-    } else {
-        for &byte in dna {
-            counts[NUC_LUT[byte as usize] as usize] += 1;
-        }
+    let lut = if masked { &MASKED_LUT } else { &NUC_LUT };
+    let mut tables = [[0u64; 8]; 4];
+    let mut quads = dna.chunks_exact(4);
+    for q in &mut quads {
+        tables[0][lut[q[0] as usize] as usize] += 1;
+        tables[1][lut[q[1] as usize] as usize] += 1;
+        tables[2][lut[q[2] as usize] as usize] += 1;
+        tables[3][lut[q[3] as usize] as usize] += 1;
     }
-    let total: u32 = counts.iter().sum();
+    for &b in quads.remainder() {
+        tables[0][lut[b as usize] as usize] += 1;
+    }
+    let mut counts = [0u64; 6];
+    for (i, c) in counts.iter_mut().enumerate() {
+        *c = tables[0][i] + tables[1][i] + tables[2][i] + tables[3][i];
+    }
+    let total: u64 = counts.iter().sum();
     if total == 0 {
         return 0.0;
     }
@@ -73,17 +76,12 @@ pub fn entropy_fast(dna: &[u8], masked: bool) -> f64 {
     entropy
 }
 
-/// Fast path that only computes Shannon entropy and writes a BED file.
+/// Fast path that only computes Shannon entropy and CTW and writes a BED file.
 ///
-/// Architecture:
-///   1. Read all records sequentially into memory (bio strips newlines for free).
-///   2. Compute entropy in parallel with rayon's indexed par_iter + par_chunks:
-///      - par_iter across chromosomes keeps all cores busy for many-scaffold genomes.
-///      - par_chunks within each chromosome fully utilises cores for few-scaffold genomes.
-///      - rayon's IndexedParallelIterator collect() preserves FASTA file order,
-///        so no sort or MPSC channel is needed.
-///   3. Write in order directly.
-pub fn entropy_windows(matches: &clap::ArgMatches, mut bed_file: BufWriter<File>) -> Result<()> {
+/// Uses the same streaming pipeline as the main mode: records are read in
+/// batches, windows are processed in parallel across and within records, and
+/// rows are written in FASTA order.
+pub fn entropy_windows(matches: &clap::ArgMatches, bed_file: BufWriter<File>) -> Result<()> {
     let input_fasta = matches
         .get_one::<PathBuf>("fasta")
         .expect("handled by clap");
@@ -93,59 +91,20 @@ pub fn entropy_windows(matches: &clap::ArgMatches, mut bed_file: BufWriter<File>
     let window_size = matches.get_one::<usize>("window_size").cloned().unwrap();
     let masked = matches.get_one::<bool>("masked").cloned().unwrap();
 
-    let spinner = ProgressBar::new_spinner();
-    spinner.set_style(ProgressStyle::with_template(
-        "[+]\tReading: {spinner:.cyan} {pos} sequences",
-    )?);
-
     eprintln!("[+]\tReading fasta (entropy mode)");
-    // needletail's seq() strips newlines with SIMD memchr2 and returns Cow::Owned
-    // for multi-line sequences (the common case), so into_owned() is a move not a copy.
-    let mut records: Vec<(String, Vec<u8>)> = Vec::new();
-    let mut reader = parse_fastx_file(input_fasta)?;
-    while let Some(result) = reader.next() {
-        let rec = result?;
-        let raw_id = rec.id();
-        let id_end = raw_id
-            .iter()
-            .position(|&b| b == b' ' || b == b'\t')
-            .unwrap_or(raw_id.len());
-        let id = String::from_utf8_lossy(&raw_id[..id_end]).into_owned();
-        let seq = rec.seq().into_owned();
-        records.push((id, seq));
-        spinner.inc(1);
-    }
-    spinner.finish();
-
-    // par_iter on a Vec is an IndexedParallelIterator: collect() preserves order.
-    // par_chunks within each record gives intra-chromosome parallelism so a
-    // genome dominated by a handful of large scaffolds still uses all cores.
-    let results: Vec<Vec<(usize, usize, f64, f64)>> = records
-        .par_iter()
-        .map(|(_, seq)| {
-            seq.par_chunks(window_size)
-                .enumerate()
-                .map(|(i, win)| {
-                    let start = i * window_size;
-                    let entropy = entropy_fast(win, masked);
-                    let ctw = crate::kmeru8::ctw_bits_per_base_dna(win, 6);
-                    (start, start + win.len(), entropy, ctw)
-                })
-                .collect()
-        })
-        .collect();
-
-    eprintln!("[+]\tWriting BED output");
-    for ((id, _), windows) in records.iter().zip(results.iter()) {
-        for &(start, end, entropy, ctw) in windows {
-            writeln!(
-                bed_file,
-                "{}\t{}\t{}\t{:.6}\t{:.6}",
-                id, start, end, entropy, ctw
-            )?;
-        }
-    }
-    bed_file.flush()?;
+    let mut writers = pipeline::run(input_fasta, window_size, vec![bed_file], |w, bufs| {
+        let entropy = entropy_fast(w.seq, masked);
+        let ctw = crate::kmeru8::ctw_bits_per_base_dna(w.seq, CTW_DEPTH);
+        let b = &mut bufs[0];
+        b.extend_from_slice(w.record.id.as_bytes());
+        b.push(b'\t');
+        push_uint(b, w.start as u64);
+        b.push(b'\t');
+        push_uint(b, w.end as u64);
+        // Vec<u8>'s io::Write never fails
+        let _ = writeln!(b, "\t{entropy:.6}\t{ctw:.6}");
+    })?;
+    writers[0].flush()?;
 
     eprintln!(
         "[+]\tOutput written to: ./fw_out/{}_entropy.bed",
@@ -191,6 +150,15 @@ mod tests {
         let dna = b"acgtacgt";
         let h = entropy_fast(dna, true);
         assert_eq!(h, 0.0);
+        // mixed: only the upper case half counts
+        assert_eq!(entropy_fast(b"ACGTacgtRYK", true), 2.0);
+    }
+
+    #[test]
+    fn test_entropy_odd_lengths() {
+        // lengths that are not a multiple of the 4-way unroll
+        assert_eq!(entropy_fast(b"AC", false), 1.0);
+        assert_eq!(entropy_fast(b"ACGTA", false), entropy_fast(b"AACGT", false));
     }
 
     #[test]

@@ -1,0 +1,31 @@
+ID	description	start	end	A	C	G	T	N
+seq1	chromosome 1, mixed case with a gap	0	333	95	93	75	70	0
+seq1	chromosome 1, mixed case with a gap	333	666	71	79	87	96	0
+seq1	chromosome 1, mixed case with a gap	666	999	77	71	88	97	0
+seq1	chromosome 1, mixed case with a gap	999	1332	58	43	50	50	132
+seq1	chromosome 1, mixed case with a gap	1332	1665	77	71	90	77	18
+seq1	chromosome 1, mixed case with a gap	1665	1998	68	87	94	84	0
+seq1	chromosome 1, mixed case with a gap	1998	2331	83	88	72	90	0
+seq1	chromosome 1, mixed case with a gap	2331	2500	37	36	45	51	0
+seq2	No description.	0	333	85	85	81	82	0
+seq2	No description.	333	666	91	89	81	72	0
+seq2	No description.	666	700	8	6	9	11	0
+seq3	satellites and homopolymers	0	333	333	0	0	0	0
+seq3	satellites and homopolymers	333	666	111	0	132	90	0
+seq3	satellites and homopolymers	666	999	56	0	167	110	0
+seq3	satellites and homopolymers	999	1332	95	48	96	94	0
+seq3	satellites and homopolymers	1332	1665	95	47	95	96	0
+seq3	satellites and homopolymers	1665	1998	95	48	95	95	0
+seq3	satellites and homopolymers	1998	2331	75	81	91	86	0
+seq3	satellites and homopolymers	2331	2664	92	75	79	87	0
+seq3	satellites and homopolymers	2664	2997	83	92	74	84	0
+seq3	satellites and homopolymers	2997	3200	102	100	1	0	0
+seq4	all gap	0	333	0	0	0	0	333
+seq4	all gap	333	600	0	0	0	0	267
+seq5	No description.	0	333	68	84	95	86	0
+seq5	No description.	333	666	89	83	84	77	0
+seq5	No description.	666	999	76	91	81	85	0
+seq5	No description.	999	1332	73	70	75	85	30
+seq5	No description.	1332	1665	98	87	65	83	0
+seq5	No description.	1665	1998	75	79	97	82	0
+seq5	No description.	1998	2000	1	1	0	0	0
