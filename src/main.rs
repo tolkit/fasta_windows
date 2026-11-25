@@ -72,7 +72,7 @@ fn main() -> Result<()> {
             .long("entropy")
             .action(ArgAction::SetTrue)
             .help(
-                "Entropy mode: output a single BED file of Shannon entropy per window. \
+                "Entropy mode: output a single BED file of Shannon entropy and CTW per window. \
                  Skips all k-mer and nucleotide-composition computation for maximum speed.",
             ),
     );

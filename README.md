@@ -24,26 +24,31 @@ The easiest way to get `fasta_windows` is through <b><a href="https://anaconda.o
 conda create -n fasta_windows -c bioconda fasta_windows
 ```
 
+Or, with Rust installed, from <a href="https://crates.io/crates/fasta_windows">crates.io</a>:
+
+```bash
+cargo install fasta_windows
+```
+
+A macOS binary is also attached to each <a href="https://github.com/tolkit/fasta_windows/releases">GitHub release</a>. See [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
+
 ## Usage
 
 ```
-Fasta windows 0.2.3
-Max Brown <mb39@sanger.ac.uk>
 Quickly compute statistics over a fasta file in windows.
 
-USAGE:
-    fasta_windows [FLAGS] [OPTIONS] --fasta <fasta> --output <output>
+Usage: fasta_windows [OPTIONS] --fasta <fasta> --output <output>
 
-FLAGS:
-    -d, --description    Add an extra column to _windows.tsv output with fasta header descriptions.
-    -h, --help           Prints help information
-    -m, --masked         Consider only uppercase nucleotides in the calculations.
-    -V, --version        Prints version information
-
-OPTIONS:
-    -f, --fasta <fasta>                The input fasta file.
-    -o, --output <output>              Output filename for the TSV's (without extension).
-    -w, --window_size <window_size>    Integer size of window for statistics to be computed over. [default: 1000]
+Options:
+  -f, --fasta <fasta>              The input fasta file.
+  -w, --window_size <window_size>  Integer size of window for statistics to be computed over. [default: 1000]
+  -d, --description                Add an extra column to _windows.tsv output with fasta header descriptions.
+  -o, --output <output>            Output filename for the TSV's (without extension).
+  -m, --masked                     Consider only uppercase nucleotides in the calculations.
+  -c, --ctw                        Calculate the Context-Tree Weighting (how compressible a sequence is).
+  -e, --entropy                    Entropy mode: output a single BED file of Shannon entropy and CTW per window. Skips all k-mer and nucleotide-composition computation for maximum speed.
+  -h, --help                       Print help
+  -V, --version                    Print version
 ```
 
 ## Building

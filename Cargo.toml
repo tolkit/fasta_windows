@@ -1,8 +1,9 @@
 [package]
 name = "fasta_windows"
-version = "0.2.6"
+version = "0.3.0"
 authors = ["Max Brown <mb39@sanger.ac.uk>", "Matthieu Muffato", "Rich Challis"]
 edition = "2021"
+rust-version = "1.82"
 license = "MIT"
 description = "Make quick statistics in windows from a fasta file."
 homepage = "https://github.com/tolkit/fasta_windows"
@@ -12,6 +13,8 @@ keywords = ["fasta", "windows", "genomics"]
 categories = ["command-line-utilities", "science"]
 
 [features]
+default = ["entropy"]
+# -e/--entropy mode
 entropy = []
 # bzip2, xz and zstd input (gzip is always supported); builds C libraries
 compression = ["needletail/compression"]
