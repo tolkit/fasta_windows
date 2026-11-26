@@ -6,13 +6,15 @@
 
 Written for Darwin Tree of Life chromosomal level genome assemblies. The executable takes a fasta formatted file and calculates some statistics of interest in windows:
 
-- GC content
 - GC proportion
 - GC and AT skew
-- Proportion of G's, C's, A's, T's, N's, and CpG's
+- Proportion of G's, C's, A's, T's, N's, soft-masked bases, and CpG's
 - Shannon entropy
+- Context-Tree Weighting compressibility (optional, `-c`)
 - Di/tri/tetranucleotide shannon diversity
-- Di/tri/tetranucleotide frequency arrays
+- Mono/di/tri/tetranucleotide count arrays
+
+An entropy-only mode (`-e`) is also available; see [below](#entropy-mode-centromere--repeat-detection-pipeline).
 
 Output files can be visualised using <a href="https://github.com/tolkit/fw_plot">fw_plot</a> or grouped using <a href="https://github.com/tolkit/fw_group">fw_group</a>.
 
@@ -70,22 +72,18 @@ The input may be plain or gzip-compressed FASTA. For bzip2, xz and zstd input, b
 
 ## Output
 
-Output is now a tsv with bed-like format in the first three columns. Rows are written in the same order as the records in the input FASTA:
+Output goes to `./fw_out/`. The main file, `<output>_freq_windows.tsv`, is a tsv with bed-like format in the first three columns. Rows are written in the same order as the records in the input FASTA. `-d` adds a `description` column after `ID`, and `-c` adds a `ctw` column after `Shannon_entropy`. For example, on `tests/data/small.fa`:
 
 ```
-ID	start	end	GC_prop	GC_skew	AT_skew	Shannon_entropy	Prop_Gs	Prop_Cs	Prop_As	Prop_Ts	Prop_Ns	CpG_prop	Dinucleotide_Shannon	Trinucleotide_Shannon	Tetranucleotide_Shannon
-OV656674.1	0	1000	0.533	-0.088	-0.006	1.994	0.243	0.290	0.232	0.235	0.000	0.070	3.963	5.825	7.474
-OV656674.1	1000	2000	0.645	0.048	0.025	1.937	0.338	0.307	0.182	0.173	0.000	0.120	3.862	5.751	7.526
-OV656674.1	2000	3000	0.579	0.022	0.012	1.982	0.296	0.283	0.213	0.208	0.000	0.106	3.940	5.871	7.653
-OV656674.1	3000	4000	0.541	0.039	-0.020	1.994	0.281	0.260	0.225	0.234	0.000	0.081	3.980	5.926	7.763
-OV656674.1	4000	5000	0.585	0.084	-0.075	1.974	0.317	0.268	0.192	0.223	0.000	0.104	3.917	5.801	7.568
-OV656674.1	5000	6000	0.529	-0.096	-0.006	1.994	0.239	0.290	0.234	0.237	0.000	0.068	3.938	5.740	7.297
-OV656674.1	6000	7000	0.576	-0.118	0.075	1.976	0.254	0.322	0.228	0.196	0.000	0.079	3.948	5.884	7.666
-OV656674.1	7000	8000	0.526	-0.004	0.084	1.996	0.262	0.264	0.257	0.217	0.000	0.065	3.975	5.903	7.692
-OV656674.1	8000	9000	0.430	-0.093	0.088	1.980	0.195	0.235	0.310	0.260	0.000	0.054	3.955	5.899	7.719
+ID	start	end	GC_prop	GC_skew	AT_skew	Shannon_entropy	Prop_Gs	Prop_Cs	Prop_As	Prop_Ts	Prop_Ns	Prop_masked	CpG_prop	Dinucleotide_Shannon	Trinucleotide_Shannon	Tetranucleotide_Shannon
+seq1	0	1000	0.493	0.014	-0.041	1.999	0.250	0.243	0.243	0.264	0.000	0.106	0.064	3.992	5.951	7.801
+seq1	1000	2000	0.514	0.080	-0.017	2.307	0.236	0.201	0.203	0.210	0.150	0.263	0.052	3.989	5.957	7.797
+seq1	2000	2500	0.478	-0.038	-0.080	1.996	0.230	0.248	0.240	0.282	0.000	0.334	0.058	3.980	5.907	7.594
+seq2	0	700	0.501	-0.026	0.054	1.999	0.244	0.257	0.263	0.236	0.000	0.000	0.064	3.990	5.951	7.749
+seq3	0	1000	0.300	1.000	0.429	1.485	0.300	0.000	0.500	0.200	0.000	0.000	0.000	2.331	2.541	2.550
 ```
 
-Also output (non-optional at the moment), are three more TSV's, which are the arrays of di/tri/tetranucleotide frequencies in each window. These files are large, especially as tetranucleotide frequencies will contain 4e4 columns. The kmers are sorted lexicographically from left -> right (AA(AA) to TT(TT)). Only k-mers made entirely of A, C, G and T (in either case) are counted; any other character, such as N or an IUPAC ambiguity code, breaks the k-mer.
+Also output (non-optional at the moment) are four more TSVs, `<output>_{mononuc,dinuc,trinuc,tetranuc}_windows.tsv`, with the counts of each nucleotide (A, C, G, T, N) and each di/tri/tetranucleotide in each window. These files are large, especially the tetranucleotide file with 256 count columns. The kmers are sorted lexicographically from left -> right (AA(AA) to TT(TT)). Only k-mers made entirely of A, C, G and T (in either case) are counted; any other character, such as N or an IUPAC ambiguity code, breaks the k-mer.
 
 e.g. for dinucleotide frequencies:
 
@@ -128,6 +126,6 @@ Rscript plot_entropy.R -i fw_out/species_name_entropy.bed -o species_name
 
 As of version 0.2.2, I've removed canonical kmers as an option; it was really computationally expensive and I couldn't think of a way to efficienty add it in. End users that wish this are pointed in the direction of <a href="https://github.com/tolkit/fw_group">fw_group</a>, which will at some point soon provide this functionality.
 
-The masked (-m) flag only affects GC content, GC proportion, GC and AT skew, proportion of G's, C's, A's, T's, N's, CpG's. Kmers are coerced to uppercase automatically. Shannon index counts only uppercase nucleotides.
+The masked (-m) flag makes GC proportion, GC and AT skew, the proportions of G's, C's, A's, T's and N's, and the mononucleotide counts consider only uppercase bases, and sets `Prop_masked` to 0. K-mers (and so CpG and the k-mer Shannon diversities) and `Shannon_entropy` ignore case either way. In entropy mode (`-e`), `-m` makes Shannon entropy count only uppercase bases.
 
-Please use, test, and let me know if there are any bugs or features you want implemented. Either raise an issue, or email me (see email in usage).
+Please use, test, and let me know if there are any bugs or features you want implemented. Either raise an issue, or email me (see `authors` in Cargo.toml).
